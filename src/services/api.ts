@@ -189,10 +189,11 @@ function normalizeDashboardData(data: DashboardData): DashboardData {
     }
     data.overview.totalAdsCost = data.overview.fbAdsCost + data.overview.ggAdsCost;
 
-    // Chi phí QC chiếm % TỔNG DOANH THU (theo đúng chỉ đạo của user)
+    // Chi phí FB chiếm % TỔNG DOANH THU, Chi phí GG chiếm % TỔNG DOANH THU GOOGLE
     const totRev = data.overview.totalRevenue;
+    const ggRev = data.overview.ggRevenue;
     data.overview.fbAdsPercent = totRev > 0 ? parseFloat(((data.overview.fbAdsCost / totRev) * 100).toFixed(2)) : 0;
-    data.overview.ggAdsPercent = totRev > 0 ? parseFloat(((data.overview.ggAdsCost / totRev) * 100).toFixed(2)) : 0;
+    data.overview.ggAdsPercent = ggRev > 0 ? parseFloat(((data.overview.ggAdsCost / ggRev) * 100).toFixed(2)) : 0;
     data.overview.totalAdsPercent = totRev > 0 ? parseFloat(((data.overview.totalAdsCost / totRev) * 100).toFixed(2)) : 0;
 
     // Tỉ lệ chốt và chi phí / đơn vị tự động tính

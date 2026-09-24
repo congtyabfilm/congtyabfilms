@@ -266,9 +266,9 @@ function extractMonthData(ss, month, year, availableMonths) {
   const remainingRevenue = parseNumber(getSafeCell(overviewValues, 9, 3)) || (targetRevenue - totalRevenue);
   const targetDaily = parseNumber(getSafeCell(overviewValues, 10, 3));
 
-  // Tỷ lệ chi phí QC chiếm % TỔNG DOANH THU (theo đúng chỉ đạo của user)
+  // Tỷ lệ chi phí QC: FB chiếm % TỔNG DOANH THU, GG chiếm % TỔNG DOANH THU GOOGLE
   const fbAdsPercent = totalRevenue > 0 ? parseFloat(((fbAdsCost / totalRevenue) * 100).toFixed(2)) : 0;
-  const ggAdsPercent = totalRevenue > 0 ? parseFloat(((ggAdsCost / totalRevenue) * 100).toFixed(2)) : 0;
+  const ggAdsPercent = ggRevenue > 0 ? parseFloat(((ggAdsCost / ggRevenue) * 100).toFixed(2)) : 0;
   const totalAdsPercent = totalRevenue > 0 ? parseFloat(((totalAdsCost / totalRevenue) * 100).toFixed(2)) : 0;
 
   costPerOrder = totalOrders > 0 ? Math.round(fbAdsCostBeforeTax / totalOrders) : 0;

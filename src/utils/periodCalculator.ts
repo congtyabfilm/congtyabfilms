@@ -236,9 +236,9 @@ export function calculatePeriodMetrics(
     ? parseFloat(((currentMetrics.fbAdsCost / currentMetrics.totalRev) * 100).toFixed(2))
     : 0;
 
-  // Chi phí GG chiếm % TỔNG DOANH THU (theo đúng chỉ đạo của user)
-  const ggAdsPercent = currentMetrics.totalRev > 0
-    ? parseFloat(((currentMetrics.ggAdsCost / currentMetrics.totalRev) * 100).toFixed(2))
+  // Chi phí GG chiếm % TỔNG DOANH THU GOOGLE (theo đúng chỉ đạo của user)
+  const ggAdsPercent = currentMetrics.ggRev > 0
+    ? parseFloat(((currentMetrics.ggAdsCost / currentMetrics.ggRev) * 100).toFixed(2))
     : 0;
 
   const closingRateLeads = currentMetrics.leads > 0

@@ -322,7 +322,7 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({
 
           <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
             <span className="text-slate-500 dark:text-slate-400 font-medium">
-              Chiếm % Tổng Doanh Thu:
+              Chiếm DT Google:
             </span>
             <span className="font-extrabold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-2 py-0.5 rounded-md">
               {formatPercent(periodMetrics.ggAdsPercent)}
