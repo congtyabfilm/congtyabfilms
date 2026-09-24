@@ -23,36 +23,28 @@ export const StaffLeaderboard: React.FC<StaffLeaderboardProps> = ({ staffList, t
           icon: '🥇',
           label: 'Top 1 Doanh Số',
           badgeClass: 'bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 font-black ring-1 ring-amber-400/50 shadow-xs',
-          cardBorder: 'border-2 border-amber-400/70 dark:border-amber-500/60 shadow-md shadow-amber-500/10 ring-1 ring-amber-400/30',
-          avatarGradient: 'from-amber-400 to-yellow-300 text-amber-950 ring-2 ring-amber-400/60 shadow-xs',
-          rankSubtitle: '🏆 Quán quân doanh số'
+          cardBorder: 'border-2 border-amber-400/70 dark:border-amber-500/60 shadow-md shadow-amber-500/10 ring-1 ring-amber-400/30'
         };
       case 1:
         return {
           icon: '🥈',
           label: 'Top 2 Doanh Số',
           badgeClass: 'bg-gradient-to-r from-slate-200 to-slate-400 text-slate-900 font-bold ring-1 ring-slate-300 shadow-xs',
-          cardBorder: 'border border-slate-300 dark:border-slate-600 shadow-xs hover:border-slate-400',
-          avatarGradient: 'from-slate-200 to-slate-400 text-slate-900 ring-2 ring-slate-300 shadow-xs',
-          rankSubtitle: '🥈 Á quân doanh số'
+          cardBorder: 'border border-slate-300 dark:border-slate-600 shadow-xs hover:border-slate-400'
         };
       case 2:
         return {
           icon: '🥉',
           label: 'Top 3 Doanh Số',
           badgeClass: 'bg-gradient-to-r from-amber-600 to-amber-700 text-white font-bold ring-1 ring-amber-600/40 shadow-xs',
-          cardBorder: 'border border-amber-600/30 dark:border-amber-700/40 shadow-xs hover:border-amber-600/60',
-          avatarGradient: 'from-amber-600 to-amber-700 text-white ring-2 ring-amber-600/40 shadow-xs',
-          rankSubtitle: '🥉 Hạng 3 doanh số'
+          cardBorder: 'border border-amber-600/30 dark:border-amber-700/40 shadow-xs hover:border-amber-600/60'
         };
       default:
         return {
           icon: `#${index + 1}`,
           label: `Hạng ${index + 1}`,
           badgeClass: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold ring-1 ring-slate-200 dark:ring-slate-600',
-          cardBorder: 'border border-slate-200/80 dark:border-slate-700/80 shadow-xs hover:border-slate-300 dark:hover:border-slate-600',
-          avatarGradient: 'from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 text-slate-800 dark:text-slate-100',
-          rankSubtitle: `Hạng ${index + 1}`
+          cardBorder: 'border border-slate-200/80 dark:border-slate-700/80 shadow-xs hover:border-slate-300 dark:hover:border-slate-600'
         };
     }
   };
@@ -107,29 +99,24 @@ export const StaffLeaderboard: React.FC<StaffLeaderboardProps> = ({ staffList, t
             >
               <div>
                 
-                {/* Header: Name and Rank Badge */}
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-11 h-11 rounded-2xl bg-gradient-to-tr flex items-center justify-center font-black text-base ${rank.avatarGradient}`}>
-                      {staff.name.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <h4 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
-                        {staff.name}
-                      </h4>
-                      <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                        <Target className="w-3 h-3 text-slate-400" />
-                        KPI: {formatCompactVND(staff.target)}
-                      </span>
-                    </div>
+                {/* Header: Name and Rank Badge (Bỏ icon chữ viết tắt, hiển thị Tên trực quan) */}
+                <div className="flex items-start justify-between mb-3 gap-2">
+                  <div>
+                    <h4 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                      {staff.name}
+                    </h4>
+                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
+                      <Target className="w-3 h-3 text-slate-400" />
+                      KPI: {formatCompactVND(staff.target)}
+                    </span>
                   </div>
 
                   <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${rank.badgeClass}`}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs shrink-0 ${rank.badgeClass}`}
                     title={rank.label}
                   >
                     <span>{rank.icon}</span>
-                    <span className="hidden sm:inline">{rank.label}</span>
+                    <span className="font-bold">{rank.label}</span>
                   </span>
                 </div>
 
