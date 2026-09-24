@@ -4,10 +4,9 @@ import { KPIOverview } from './components/KPIOverview';
 import { RevenueChart } from './components/RevenueChart';
 import { StaffLeaderboard } from './components/StaffLeaderboard';
 import { DailyTable } from './components/DailyTable';
-import { SettingsModal } from './components/SettingsModal';
 import type { DashboardData } from './types/dashboard';
 import { fetchDashboardData, getSavedGasUrl } from './services/api';
-import { AlertCircle, RefreshCw, FileSpreadsheet } from 'lucide-react';
+import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
@@ -15,7 +14,6 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isDark, setIsDark] = useState<boolean>(false);
 
   // Khởi tạo Dark mode theo hệ điều hành hoặc localStorage
@@ -80,7 +78,7 @@ export const App: React.FC = () => {
     loadData();
   }, []);
 
-  // Tự động làm mới dữ liệu ngầm mỗi 60 giây nếu có link Google Apps Script
+  // Tự động làm mới dữ liệu ngầm mỗi 60 giây
   useEffect(() => {
     const gasUrl = getSavedGasUrl();
     if (!gasUrl) return;
@@ -103,7 +101,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors font-sans antialiased">
       
       {/* Navigation Header */}
       <Header
@@ -114,13 +112,12 @@ export const App: React.FC = () => {
         isRefreshing={isRefreshing}
         lastUpdated={data?.lastUpdated || new Date().toISOString()}
         isMock={!!data?.isMock}
-        onOpenSettings={() => setIsSettingsOpen(true)}
         isDark={isDark}
         onToggleDark={toggleDarkMode}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
         
         {/* Error notification if any */}
         {error && (
@@ -130,28 +127,10 @@ export const App: React.FC = () => {
               <span>{error}</span>
             </div>
             <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="font-semibold underline hover:no-underline whitespace-nowrap"
+              onClick={() => loadData(selectedMonthId, false)}
+              className="font-bold underline hover:no-underline whitespace-nowrap cursor-pointer"
             >
-              Kiểm tra cài đặt
-            </button>
-          </div>
-        )}
-
-        {/* Demo Mode banner if not connected to live Sheet */}
-        {data?.isMock && (
-          <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800 text-amber-800 dark:text-amber-300 px-4 py-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-              <span>
-                <b>Chế độ xem trước (Dữ liệu mẫu Tháng 9/2026):</b> Kết nối với Google Sheet của bạn để tự động đồng bộ realtime.
-              </span>
-            </div>
-            <button
-              onClick={() => setIsSettingsOpen(true)}
-              className="font-bold underline hover:no-underline text-amber-900 dark:text-amber-200 self-start sm:self-auto"
-            >
-              Kết nối Google Sheet ngay →
+              Thử tải lại
             </button>
           </div>
         )}
@@ -160,23 +139,30 @@ export const App: React.FC = () => {
         {isLoading && !data ? (
           <div className="h-96 flex flex-col items-center justify-center gap-3 text-slate-400">
             <RefreshCw className="w-8 h-8 animate-spin text-emerald-500" />
-            <p className="text-sm font-medium">Đang tải dữ liệu từ Google Spreadsheet...</p>
+            <p className="text-sm font-semibold">Đang tải dữ liệu từ Google Spreadsheet...</p>
           </div>
         ) : data ? (
           <>
-            {/* 1. Core Business KPIs & Budget Banner */}
-            <KPIOverview overview={data.overview} />
+            {/* 1. Quick Insights & Core Business KPIs */}
+            <KPIOverview
+              overview={data.overview}
+              staffList={data.staffList}
+            />
 
-            {/* 2. Daily Trends & Revenue Chart */}
-            <RevenueChart dailyData={data.daily} />
+            {/* 2. Interactive Charts (Xu hướng ngày, Cơ cấu kênh, Thi đua sale) */}
+            <RevenueChart
+              dailyData={data.daily}
+              staffList={data.staffList}
+              overview={data.overview}
+            />
 
-            {/* 3. Sales Team Performance & Auto-detected Staff */}
+            {/* 3. Sales Team Performance & 4 Auto-detected Staff */}
             <StaffLeaderboard
               staffList={data.staffList}
               totalFbRevenue={data.overview.fbRevenue}
             />
 
-            {/* 4. Detailed Daily Table with Staff Breakdown */}
+            {/* 4. Detailed Daily Table with Staff Breakdown (dd/mm/yyyy) */}
             <DailyTable
               dailyData={data.daily}
               staffList={data.staffList}
@@ -188,24 +174,22 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 py-5 text-xs text-slate-500 dark:text-slate-400 transition-colors">
+      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 py-4 text-xs text-slate-500 dark:text-slate-400 transition-colors mt-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
-          <div className="flex items-center gap-2">
-            <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>AB Films Marketing & Sales Dashboard — Sẵn sàng triển khai lên Vercel</span>
+          <div className="flex items-center gap-2.5">
+            <div className="h-6 w-6 rounded-md bg-white p-0.5 border border-slate-200 flex items-center justify-center">
+              <img src="/logo.png" alt="AB Films" className="h-full w-full object-contain" />
+            </div>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">
+              AB Films Dashboard
+            </span>
+            <span className="text-slate-400">• Báo Cáo Marketing & Doanh Số Tự Động</span>
           </div>
           <div>
             Tự động nhận diện Tháng mới & Nhân sự mới từ Google Sheets
           </div>
         </div>
       </footer>
-
-      {/* Settings Modal */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onSaveAndReload={() => loadData(selectedMonthId, false)}
-      />
 
     </div>
   );

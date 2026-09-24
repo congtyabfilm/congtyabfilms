@@ -8,7 +8,7 @@ import {
   Users
 } from 'lucide-react';
 import type { DailyData, StaffSummary } from '../types/dashboard';
-import { formatVND, formatPercent, formatNumber } from '../utils/formatters';
+import { formatVND, formatPercent, formatNumber, formatDateDDMMYYYY } from '../utils/formatters';
 
 interface DailyTableProps {
   dailyData: DailyData[];
@@ -45,7 +45,7 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
     ];
 
     const rows = dailyData.map((d) => [
-      `"${d.dateLabel}"`,
+      `"${formatDateDDMMYYYY(d.dateLabel, d.dayIndex)}"`,
       d.fbAdsCostBeforeTax,
       d.fbAdsCostAfterTax,
       d.fbRevenue,
@@ -139,7 +139,7 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
                     }`}
                   >
                     <td className="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
-                      {row.dateLabel}
+                      {formatDateDDMMYYYY(row.dateLabel, row.dayIndex)}
                     </td>
                     <td className="py-3 px-3 text-right text-rose-600 dark:text-rose-400 font-medium whitespace-nowrap">
                       {formatVND(row.fbAdsCostAfterTax)}
@@ -187,7 +187,7 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
                             <Users className="w-3.5 h-3.5 text-emerald-500" />
-                            <span>Chi tiết doanh số nhân sự ngày {row.dateLabel}:</span>
+                            <span>Chi tiết doanh số nhân sự ngày {formatDateDDMMYYYY(row.dateLabel, row.dayIndex)}:</span>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-1">
