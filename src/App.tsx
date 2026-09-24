@@ -44,17 +44,28 @@ export const App: React.FC = () => {
     }
   };
 
+  // Bộ nhớ đệm dữ liệu theo từng tháng để chuyển đổi tức thì (0ms)
+  const monthCache = React.useRef<Map<string, DashboardData>>(new Map());
+
   // Hàm tải dữ liệu
   const loadData = useCallback(async (monthId?: string, isBackgroundSync: boolean = false) => {
     try {
-      if (!isBackgroundSync) setIsLoading(true);
-      else setIsRefreshing(true);
+      const mId = monthId || selectedMonthId;
+
+      // Nếu đã có trong cache và không phải sync ngầm -> hiển thị ngay lập tức 0ms
+      if (monthCache.current.has(mId) && !isBackgroundSync) {
+        setData(monthCache.current.get(mId)!);
+        setIsLoading(false);
+      } else if (!isBackgroundSync) {
+        setIsLoading(true);
+      }
+
+      if (isBackgroundSync) setIsRefreshing(true);
       setError(null);
 
       let targetMonth: number | undefined;
       let targetYear: number | undefined;
 
-      const mId = monthId || selectedMonthId;
       if (mId && mId.includes('_')) {
         const parts = mId.split('_');
         targetMonth = parseInt(parts[0], 10);
@@ -62,10 +73,29 @@ export const App: React.FC = () => {
       }
 
       const res = await fetchDashboardData(targetMonth, targetYear);
+      
+      // Lưu vào cache
+      monthCache.current.set(mId, res);
+      if (res.month && res.year) {
+        monthCache.current.set(`${res.month}_${res.year}`, res);
+      }
+
       setData(res);
 
       if (res.month && res.year) {
         setSelectedMonthId(`${res.month}_${res.year}`);
+      }
+
+      // Tự động tải trước (pre-fetch) tháng trước vào cache nếu chưa có để bấm nhanh tức thì
+      if (res.availableMonths && res.availableMonths.length > 1) {
+        const prevMonthOpt = res.availableMonths[1];
+        if (prevMonthOpt && !monthCache.current.has(prevMonthOpt.id)) {
+          fetchDashboardData(prevMonthOpt.month, prevMonthOpt.year)
+            .then(prevRes => {
+              monthCache.current.set(prevMonthOpt.id, prevRes);
+            })
+            .catch(() => {});
+        }
       }
     } catch (err: any) {
       console.error('Lỗi khi nạp dữ liệu:', err);
@@ -93,18 +123,62 @@ export const App: React.FC = () => {
     return () => clearInterval(interval);
   }, [selectedMonthId, loadData]);
 
-  // Xử lý khi chọn tháng khác từ menu
+  // Xử lý khi chọn tháng khác từ menu Header
   const handleSelectMonth = (monthId: string) => {
     setSelectedMonthId(monthId);
-    setSelectedPeriod('month');
+    if (data?.availableMonths?.[0]?.id === monthId) {
+      setSelectedPeriod('month');
+    } else if (data?.availableMonths?.[1]?.id === monthId) {
+      setSelectedPeriod('last_month');
+    } else {
+      setSelectedPeriod('month');
+    }
     loadData(monthId, false);
+  };
+
+  // Xử lý chuyển đổi Kỳ xem nhanh: Tháng này / Tháng trước / Tuần này / Tuần trước / Hôm nay / Hôm qua
+  const handleSelectPeriod = (period: TimePeriod) => {
+    if (period === 'last_month') {
+      // Tìm tháng trước trong danh sách availableMonths
+      const currentIdx = data?.availableMonths?.findIndex(m => m.id === selectedMonthId) ?? -1;
+      let targetMonthOpt = (currentIdx >= 0 && currentIdx + 1 < (data?.availableMonths?.length || 0))
+        ? data?.availableMonths[currentIdx + 1]
+        : ((data?.availableMonths?.length || 0) > 1 ? data?.availableMonths[1] : undefined);
+
+      if (targetMonthOpt) {
+        setSelectedPeriod('last_month');
+        setSelectedMonthId(targetMonthOpt.id);
+        loadData(targetMonthOpt.id, false);
+      } else {
+        setSelectedPeriod('last_month');
+      }
+    } else if (period === 'month') {
+      // Tháng này: chuyển về tháng mới nhất
+      const latestMonth = data?.availableMonths?.[0];
+      setSelectedPeriod('month');
+      if (latestMonth && selectedMonthId !== latestMonth.id) {
+        setSelectedMonthId(latestMonth.id);
+        loadData(latestMonth.id, false);
+      }
+    } else {
+      // Hôm nay / Hôm qua / Tuần này / Tuần trước
+      // Nếu đang đứng ở tháng cũ (như tháng trước), tự động quay về tháng mới nhất có ngày hôm nay
+      const latestMonth = data?.availableMonths?.[0];
+      if (latestMonth && selectedMonthId !== latestMonth.id) {
+        setSelectedMonthId(latestMonth.id);
+        setSelectedPeriod(period);
+        loadData(latestMonth.id, false);
+      } else {
+        setSelectedPeriod(period);
+      }
+    }
   };
 
   const handleRefresh = () => {
     loadData(selectedMonthId, true);
   };
 
-  // Tính toán số liệu theo kỳ xem (Toàn tháng, Hôm nay, Hôm qua, Tuần này, Tuần trước)
+  // Tính toán số liệu theo kỳ xem (Tháng này, Tháng trước, Hôm nay, Hôm qua, Tuần này, Tuần trước)
   const periodMetrics = data
     ? calculatePeriodMetrics(
         selectedPeriod,
@@ -158,10 +232,10 @@ export const App: React.FC = () => {
           </div>
         ) : data && periodMetrics ? (
           <>
-            {/* Bộ lọc Kỳ xem: Toàn tháng / Hôm nay / Hôm qua / Tuần này / Tuần trước */}
+            {/* Bộ lọc Kỳ xem: Tháng này / Hôm nay / Hôm qua / Tuần này / Tuần trước / Tháng trước */}
             <PeriodFilter
               selectedPeriod={selectedPeriod}
-              onSelectPeriod={setSelectedPeriod}
+              onSelectPeriod={handleSelectPeriod}
               periodLabel={periodMetrics.periodLabel}
               comparisonLabel={periodMetrics.comparisonLabel}
             />

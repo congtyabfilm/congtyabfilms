@@ -108,10 +108,17 @@ export function calculatePeriodMetrics(
       break;
     }
 
+    case 'last_month': {
+      currentDayIndexes = dailyData.map((d) => d.dayIndex);
+      periodLabel = `Tháng trước (${month < 10 ? '0' + month : month}/${year})`;
+      comparisonLabel = `Số liệu tổng kết toàn bộ tháng`;
+      break;
+    }
+
     case 'month':
     default: {
       currentDayIndexes = dailyData.map((d) => d.dayIndex);
-      periodLabel = `Toàn tháng ${month < 10 ? '0' + month : month}/${year}`;
+      periodLabel = `Tháng này (${month < 10 ? '0' + month : month}/${year})`;
       const prevMonthNumber = month === 1 ? 12 : month - 1;
       const prevYearNumber = month === 1 ? year - 1 : year;
       comparisonLabel = `So với tháng trước (Tháng ${prevMonthNumber < 10 ? '0' + prevMonthNumber : prevMonthNumber}/${prevYearNumber})`;
@@ -169,8 +176,8 @@ export function calculatePeriodMetrics(
   let currentMetrics = aggregateDays(currentDayIndexes);
   let prevMetrics = aggregateDays(prevDayIndexes);
 
-  // Nếu là toàn tháng, dùng đúng số liệu overview tháng
-  if (period === 'month') {
+  // Nếu là toàn tháng (tháng này hoặc tháng trước), dùng đúng số liệu overview tháng
+  if (period === 'month' || period === 'last_month') {
     currentMetrics = {
       fbRev: overview.fbRevenue,
       ggRev: overview.ggRevenue,
@@ -224,12 +231,14 @@ export function calculatePeriodMetrics(
     ? parseFloat(((currentMetrics.totalAdsCost / currentMetrics.totalRev) * 100).toFixed(2))
     : 0;
 
-  const fbAdsPercent = currentMetrics.fbRev > 0
-    ? parseFloat(((currentMetrics.fbAdsCost / currentMetrics.fbRev) * 100).toFixed(2))
+  // Chi phí FB chiếm % TỔNG DOANH THU (theo đúng chỉ đạo của user)
+  const fbAdsPercent = currentMetrics.totalRev > 0
+    ? parseFloat(((currentMetrics.fbAdsCost / currentMetrics.totalRev) * 100).toFixed(2))
     : 0;
 
-  const ggAdsPercent = currentMetrics.ggRev > 0
-    ? parseFloat(((currentMetrics.ggAdsCost / currentMetrics.ggRev) * 100).toFixed(2))
+  // Chi phí GG chiếm % TỔNG DOANH THU (theo đúng chỉ đạo của user)
+  const ggAdsPercent = currentMetrics.totalRev > 0
+    ? parseFloat(((currentMetrics.ggAdsCost / currentMetrics.totalRev) * 100).toFixed(2))
     : 0;
 
   const closingRateLeads = currentMetrics.leads > 0

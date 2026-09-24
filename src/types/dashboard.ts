@@ -70,7 +70,7 @@ export interface MonthOption {
   saleSheet: string | null;
 }
 
-export type TimePeriod = 'month' | 'today' | 'yesterday' | 'this_week' | 'last_week';
+export type TimePeriod = 'month' | 'last_month' | 'today' | 'yesterday' | 'this_week' | 'last_week';
 
 export interface ComparisonValue {
   current: number;

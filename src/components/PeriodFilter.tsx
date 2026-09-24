@@ -16,11 +16,12 @@ export const PeriodFilter: React.FC<PeriodFilterProps> = ({
   comparisonLabel
 }) => {
   const options: { id: TimePeriod; label: string; icon?: React.ReactNode }[] = [
-    { id: 'month', label: 'Toàn tháng' },
+    { id: 'month', label: 'Tháng này' },
     { id: 'today', label: 'Hôm nay' },
     { id: 'yesterday', label: 'Hôm qua' },
     { id: 'this_week', label: 'Tuần này' },
-    { id: 'last_week', label: 'Tuần trước' }
+    { id: 'last_week', label: 'Tuần trước' },
+    { id: 'last_month', label: 'Tháng trước' }
   ];
 
   return (

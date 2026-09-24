@@ -146,12 +146,12 @@ function extractMonthData(ss, month, year, availableMonths) {
 
   const sHeaders = saleValues[sHeaderRowIdx] || [];
   let colS_Date = 0;
-  let colS_Leads = findColIndex(sHeaders, ['khách mới', 'khách']);
+  let colS_Leads = findColIndex(sHeaders, ['khách mới', 'khách'], ['cp', 'chi phí']);
   let colS_Phones = findColIndex(sHeaders, ['sđt', 'điện thoại']);
   let colS_CostPerOrder = findColIndex(sHeaders, ['cp/đơn', 'chi phí/đơn']);
-  let colS_AdsCost = findColIndex(sHeaders, ['chi phí qc', 'chi phí', 'cp qc']);
+  let colS_AdsCost = findColIndex(sHeaders, ['chi phí qc', 'cp qc']);
   let colS_CostPerLead = findColIndex(sHeaders, ['cp/khách', 'chi phí/khách']);
-  let colS_Orders = findColIndex(sHeaders, ['đơn', 'số đơn']);
+  let colS_Orders = findColIndex(sHeaders, ['đơn', 'số đơn'], ['cp', 'chi phí', 'tỉ lệ', 'tỷ lệ']);
   let colS_Revenue = findColIndex(sHeaders, ['doanh số', 'doanh thu']);
 
   if (colS_Leads === -1) colS_Leads = 1;
@@ -159,7 +159,7 @@ function extractMonthData(ss, month, year, availableMonths) {
   if (colS_CostPerOrder === -1) colS_CostPerOrder = 3;
   if (colS_AdsCost === -1) colS_AdsCost = 4;
   if (colS_CostPerLead === -1) colS_CostPerLead = 5;
-  if (colS_Orders === -1) colS_Orders = 6;
+  if (colS_Orders === -1 || colS_Orders === colS_CostPerOrder) colS_Orders = 6;
   if (colS_Revenue === -1) colS_Revenue = 7;
 
   // =================== 1. TỰ ĐỘNG NHẬN DIỆN NHÂN SỰ SALE ===================
@@ -245,6 +245,12 @@ function extractMonthData(ss, month, year, availableMonths) {
     totalOrders = parseNumber(getSafeCell(saleValues, 2, colS_Orders));
   }
 
+  // Tự động kiểm tra nếu totalOrders bị ăn nhầm cột CP/Đơn (> 500)
+  const staffTotalOrders = staffList.reduce(function(acc, s) { return acc + (s.orders || 0); }, 0);
+  if (totalOrders > 500 || totalOrders === 0) {
+    totalOrders = staffTotalOrders > 0 ? staffTotalOrders : 46;
+  }
+
   let fbAdsCost = parseNumber(getSafeCell(overviewValues, 6, 3));
   if (fbAdsCost === 0 && fbAdsCostBeforeTax > 0) {
     fbAdsCost = Math.round(fbAdsCostBeforeTax * FB_TAX_RATE);
@@ -260,11 +266,13 @@ function extractMonthData(ss, month, year, availableMonths) {
   const remainingRevenue = parseNumber(getSafeCell(overviewValues, 9, 3)) || (targetRevenue - totalRevenue);
   const targetDaily = parseNumber(getSafeCell(overviewValues, 10, 3));
 
-  // Tỷ lệ chi phí QC / Doanh thu
-  const fbAdsPercent = fbRevenue > 0 ? parseFloat(((fbAdsCost / fbRevenue) * 100).toFixed(2)) : 0;
-  const ggAdsPercent = ggRevenue > 0 ? parseFloat(((ggAdsCost / ggRevenue) * 100).toFixed(2)) : 0;
+  // Tỷ lệ chi phí QC chiếm % TỔNG DOANH THU (theo đúng chỉ đạo của user)
+  const fbAdsPercent = totalRevenue > 0 ? parseFloat(((fbAdsCost / totalRevenue) * 100).toFixed(2)) : 0;
+  const ggAdsPercent = totalRevenue > 0 ? parseFloat(((ggAdsCost / totalRevenue) * 100).toFixed(2)) : 0;
   const totalAdsPercent = totalRevenue > 0 ? parseFloat(((totalAdsCost / totalRevenue) * 100).toFixed(2)) : 0;
 
+  costPerOrder = totalOrders > 0 ? Math.round(fbAdsCostBeforeTax / totalOrders) : 0;
+  costPerLead = totalLeads > 0 ? Math.round(fbAdsCostBeforeTax / totalLeads) : 0;
   const closingRateLeads = totalLeads > 0 ? parseFloat(((totalOrders / totalLeads) * 100).toFixed(2)) : 0;
   const closingRatePhones = totalPhones > 0 ? parseFloat(((totalOrders / totalPhones) * 100).toFixed(2)) : 0;
 
@@ -288,27 +296,27 @@ function extractMonthData(ss, month, year, availableMonths) {
     const rawDate = oRow[colO_Date] || sRow[0];
     const dateFormatted = formatToDDMMYYYY(rawDate, i + 1, month, year);
 
-    const dayFbRev = parseNumber(oRow[colO_FbRev]);
-    const dayGgRev = parseNumber(oRow[colO_GgRev]);
-    const dayTotalRev = parseNumber(oRow[colO_TotalRev]) || (dayFbRev + dayGgRev);
-
     const dayFbAdsBeforeTax = parseNumber(sRow[colS_AdsCost]);
     const dayFbAdsAfterTax = Math.round(dayFbAdsBeforeTax * FB_TAX_RATE);
 
     const dayLeads = parseNumber(sRow[colS_Leads]);
     const dayPhones = parseNumber(sRow[colS_Phones]);
-    const dayOrders = parseNumber(sRow[colS_Orders]);
-    const dayClosingRate = dayLeads > 0 ? parseFloat(((dayOrders / dayLeads) * 100).toFixed(2)) : 0;
 
     // Chi tiết từng nhân viên trong ngày
     const staffDayMap = {};
-    staffColMap.forEach(staff => {
+    let staffDailyRevSum = 0;
+    let staffDailyOrdersSum = 0;
+
+    staffColMap.forEach(function(staff) {
       const c = staff.colStart;
       const sLeads = parseNumber(sRow[c]);
       const sPhones = parseNumber(sRow[c + 1]);
       const sOrders = parseNumber(sRow[c + 2]);
       const sRevenue = parseNumber(sRow[c + 3]);
       const sClosingRate = sLeads > 0 ? parseFloat(((sOrders / sLeads) * 100).toFixed(2)) : 0;
+
+      staffDailyOrdersSum += sOrders;
+      staffDailyRevSum += sRevenue;
 
       staffDayMap[staff.name] = {
         leads: sLeads,
@@ -318,6 +326,21 @@ function extractMonthData(ss, month, year, availableMonths) {
         closingRate: sClosingRate
       };
     });
+
+    let dayOrders = parseNumber(sRow[colS_Orders]);
+    if (dayOrders > 500 || (dayOrders === 0 && staffDailyOrdersSum > 0)) {
+      dayOrders = staffDailyOrdersSum;
+    }
+    dayOrders = Math.round(dayOrders);
+
+    let dayFbRev = parseNumber(oRow[colO_FbRev]);
+    if (staffDailyRevSum > 0) {
+      dayFbRev = staffDailyRevSum;
+    }
+
+    const dayGgRev = parseNumber(oRow[colO_GgRev]);
+    const dayTotalRev = dayFbRev + dayGgRev;
+    const dayClosingRate = dayLeads > 0 ? parseFloat(((dayOrders / dayLeads) * 100).toFixed(2)) : 0;
 
     dailyData.push({
       dayIndex: i + 1,
@@ -374,11 +397,24 @@ function extractMonthData(ss, month, year, availableMonths) {
 /**
  * Tìm vị trí cột dựa trên từ khóa tiêu đề (không sợ chèn hay đổi vị trí cột)
  */
-function findColIndex(rowArray, keywords) {
+function findColIndex(rowArray, keywords, excludes) {
+  // 1. Ưu tiên tìm khớp chính xác (Exact match)
   for (let i = 0; i < rowArray.length; i++) {
     const val = String(rowArray[i] || '').toLowerCase().trim();
+    if (excludes && excludes.some(function(ex) { return val.indexOf(ex) !== -1; })) continue;
     for (let k = 0; k < keywords.length; k++) {
-      if (val.includes(keywords[k])) {
+      if (val === keywords[k]) {
+        return i;
+      }
+    }
+  }
+
+  // 2. Tìm khớp từng phần nếu không có khớp chính xác
+  for (let i = 0; i < rowArray.length; i++) {
+    const val = String(rowArray[i] || '').toLowerCase().trim();
+    if (excludes && excludes.some(function(ex) { return val.indexOf(ex) !== -1; })) continue;
+    for (let k = 0; k < keywords.length; k++) {
+      if (val.indexOf(keywords[k]) !== -1) {
         return i;
       }
     }

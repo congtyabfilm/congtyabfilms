@@ -33,8 +33,8 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
   const handleExportCSV = () => {
     const headers = [
       'Ngày',
-      'Chi phí QC FB (chưa thuế)',
-      'Chi phí QC FB (sau thuế)',
+      'Chi phí QC FB',
+      'CP/Khách',
       'Doanh thu Facebook',
       'Doanh thu Google',
       'Tổng Doanh Thu Ngày',
@@ -47,13 +47,13 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
     const rows = dailyData.map((d) => [
       `"${formatDateDDMMYYYY(d.dateLabel, d.dayIndex)}"`,
       d.fbAdsCostBeforeTax,
-      d.fbAdsCostAfterTax,
+      d.leads > 0 ? Math.round(d.fbAdsCostBeforeTax / d.leads) : 0,
       d.fbRevenue,
       d.ggRevenue,
       d.totalRevenue,
       d.leads,
       d.phones,
-      d.orders,
+      Math.round(d.orders),
       `"${formatPercent(d.closingRate)}"`
     ]);
 
@@ -116,7 +116,8 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-700 uppercase tracking-wider">
               <th className="py-3 px-4">Ngày</th>
-              <th className="py-3 px-3 text-right">CP QC FB (sau thuế)</th>
+              <th className="py-3 px-3 text-right">Chi Phí QC FB</th>
+              <th className="py-3 px-3 text-right">CP/Khách</th>
               <th className="py-3 px-3 text-right">DT Facebook</th>
               <th className="py-3 px-3 text-right">DT Google</th>
               <th className="py-3 px-3 text-right text-emerald-600 dark:text-emerald-400">Tổng DT Ngày</th>
@@ -130,6 +131,7 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
           <tbody className="divide-y divide-slate-100 dark:divide-slate-700/60">
             {filteredData.map((row) => {
               const isExpanded = expandedDay === row.dayIndex;
+              const cpPerLead = row.leads > 0 ? Math.round(row.fbAdsCostBeforeTax / row.leads) : 0;
               return (
                 <React.Fragment key={row.dayIndex}>
                   <tr
@@ -142,7 +144,10 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
                       {formatDateDDMMYYYY(row.dateLabel, row.dayIndex)}
                     </td>
                     <td className="py-3 px-3 text-right text-rose-600 dark:text-rose-400 font-medium whitespace-nowrap">
-                      {formatVND(row.fbAdsCostAfterTax)}
+                      {formatVND(row.fbAdsCostBeforeTax)}
+                    </td>
+                    <td className="py-3 px-3 text-right text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
+                      {cpPerLead > 0 ? formatVND(cpPerLead) : '-'}
                     </td>
                     <td className="py-3 px-3 text-right text-blue-600 dark:text-blue-400 font-medium whitespace-nowrap">
                       {formatVND(row.fbRevenue)}
@@ -162,7 +167,7 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
                     <td className="py-3 px-3 text-center font-bold text-slate-900 dark:text-white">
                       {row.orders > 0 ? (
                         <span className="inline-block px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 text-[11px]">
-                          {row.orders}
+                          {Math.round(row.orders)}
                         </span>
                       ) : (
                         '0'
@@ -183,7 +188,7 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
                   {/* Expanded Row: 4 Staff Details on that Day */}
                   {isExpanded && (
                     <tr className="bg-slate-50/90 dark:bg-slate-900/70">
-                      <td colSpan={10} className="py-3 px-4 sm:px-6">
+                      <td colSpan={11} className="py-3 px-4 sm:px-6">
                         <div className="space-y-2">
                           <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
                             <Users className="w-3.5 h-3.5 text-emerald-500" />
