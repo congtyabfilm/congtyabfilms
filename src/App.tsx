@@ -245,6 +245,9 @@ export const App: React.FC = () => {
               overview={data.overview}
               periodMetrics={periodMetrics}
               staffList={data.staffList}
+              dailyData={data.daily}
+              month={data.month}
+              year={data.year}
             />
 
             {/* 2. Interactive Charts (Xu hướng ngày, Cơ cấu kênh, Thi đua sale) */}

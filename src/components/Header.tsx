@@ -81,18 +81,18 @@ export const Header: React.FC<HeaderProps> = ({
             
             {/* Connection Status Pill */}
             <div
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border ${
+              className={`flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-xs font-semibold border shrink-0 ${
                 isMock
                   ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
                   : 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
               }`}
             >
-              <Database className="w-3.5 h-3.5" />
-              <span>{isMock ? 'Dữ liệu Demo' : 'Google Sheets'}</span>
+              <Database className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden xs:inline">{isMock ? 'Demo' : 'Google Sheets'}</span>
               {isMock ? (
-                <AlertCircle className="w-3.5 h-3.5 text-amber-500" />
+                <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
               ) : (
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
               )}
             </div>
 
@@ -104,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
               <select
                 value={selectedMonthId}
                 onChange={(e) => onSelectMonth(e.target.value)}
-                className="pl-8 pr-7 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer appearance-none"
+                className="pl-8 pr-7 py-2 min-h-[38px] text-xs font-bold rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 cursor-pointer appearance-none shadow-xs"
               >
                 {availableMonths.map((m) => (
                   <option key={m.id} value={m.id}>
@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onRefresh}
               disabled={isRefreshing}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition active:scale-95 disabled:opacity-60 cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition active:scale-95 disabled:opacity-60 cursor-pointer"
               title="Đồng bộ dữ liệu tức thì từ Google Sheet"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -134,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="hidden sm:flex items-center gap-1 pl-1 border-l border-slate-200 dark:border-slate-800">
               <button
                 onClick={onToggleDark}
-                className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition cursor-pointer"
+                className="p-2 rounded-xl text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800 transition cursor-pointer min-h-[38px] min-w-[38px] flex items-center justify-center"
                 title={isDark ? 'Chuyển sang giao diện sáng' : 'Chuyển sang giao diện tối'}
               >
                 {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4" />}

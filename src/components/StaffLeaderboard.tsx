@@ -22,25 +22,37 @@ export const StaffLeaderboard: React.FC<StaffLeaderboardProps> = ({ staffList, t
         return {
           icon: '🥇',
           label: 'Top 1 Doanh Số',
-          color: 'from-amber-400 to-yellow-500 text-amber-950 ring-amber-400/50'
+          badgeClass: 'bg-gradient-to-r from-amber-400 to-yellow-500 text-amber-950 font-black ring-1 ring-amber-400/50 shadow-xs',
+          cardBorder: 'border-2 border-amber-400/70 dark:border-amber-500/60 shadow-md shadow-amber-500/10 ring-1 ring-amber-400/30',
+          avatarGradient: 'from-amber-400 to-yellow-300 text-amber-950 ring-2 ring-amber-400/60 shadow-xs',
+          rankSubtitle: '🏆 Quán quân doanh số'
         };
       case 1:
         return {
           icon: '🥈',
           label: 'Top 2 Doanh Số',
-          color: 'from-slate-300 to-slate-400 text-slate-900 ring-slate-400/50'
+          badgeClass: 'bg-gradient-to-r from-slate-200 to-slate-400 text-slate-900 font-bold ring-1 ring-slate-300 shadow-xs',
+          cardBorder: 'border border-slate-300 dark:border-slate-600 shadow-xs hover:border-slate-400',
+          avatarGradient: 'from-slate-200 to-slate-400 text-slate-900 ring-2 ring-slate-300 shadow-xs',
+          rankSubtitle: '🥈 Á quân doanh số'
         };
       case 2:
         return {
           icon: '🥉',
           label: 'Top 3 Doanh Số',
-          color: 'from-amber-600 to-amber-700 text-white ring-amber-600/50'
+          badgeClass: 'bg-gradient-to-r from-amber-600 to-amber-700 text-white font-bold ring-1 ring-amber-600/40 shadow-xs',
+          cardBorder: 'border border-amber-600/30 dark:border-amber-700/40 shadow-xs hover:border-amber-600/60',
+          avatarGradient: 'from-amber-600 to-amber-700 text-white ring-2 ring-amber-600/40 shadow-xs',
+          rankSubtitle: '🥉 Hạng 3 doanh số'
         };
       default:
         return {
           icon: `#${index + 1}`,
           label: `Hạng ${index + 1}`,
-          color: 'from-slate-200 to-slate-300 text-slate-700 dark:from-slate-700 dark:to-slate-800 dark:text-slate-300 ring-slate-300/30'
+          badgeClass: 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold ring-1 ring-slate-200 dark:ring-slate-600',
+          cardBorder: 'border border-slate-200/80 dark:border-slate-700/80 shadow-xs hover:border-slate-300 dark:hover:border-slate-600',
+          avatarGradient: 'from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 text-slate-800 dark:text-slate-100',
+          rankSubtitle: `Hạng ${index + 1}`
         };
     }
   };
@@ -52,12 +64,12 @@ export const StaffLeaderboard: React.FC<StaffLeaderboardProps> = ({ staffList, t
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
               <Award className="w-5 h-5 text-amber-500" />
               Đội Ngũ Kinh Doanh & Tiến Độ KPI
             </h3>
-            <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-              {staffList.length} Nhân Sự (Tự động nhận diện)
+            <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+              {staffList.length} Nhân Sự
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -91,18 +103,18 @@ export const StaffLeaderboard: React.FC<StaffLeaderboardProps> = ({ staffList, t
           return (
             <div
               key={staff.id}
-              className="bg-white dark:bg-slate-800/90 rounded-2xl p-5 shadow-sm border border-slate-200/80 dark:border-slate-700/80 hover:shadow-md transition relative flex flex-col justify-between"
+              className={`bg-white dark:bg-slate-800/90 rounded-2xl p-4 sm:p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg relative flex flex-col justify-between ${rank.cardBorder}`}
             >
               <div>
                 
                 {/* Header: Name and Rank Badge */}
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-600 flex items-center justify-center font-bold text-slate-800 dark:text-slate-100 shadow-inner text-base">
+                    <div className={`w-11 h-11 rounded-2xl bg-gradient-to-tr flex items-center justify-center font-black text-base ${rank.avatarGradient}`}>
                       {staff.name.slice(0, 2).toUpperCase()}
                     </div>
                     <div>
-                      <h4 className="text-base font-bold text-slate-900 dark:text-white">
+                      <h4 className="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
                         {staff.name}
                       </h4>
                       <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1">
@@ -113,7 +125,7 @@ export const StaffLeaderboard: React.FC<StaffLeaderboardProps> = ({ staffList, t
                   </div>
 
                   <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-gradient-to-r shadow-xs ${rank.color}`}
+                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs ${rank.badgeClass}`}
                     title={rank.label}
                   >
                     <span>{rank.icon}</span>
@@ -122,25 +134,25 @@ export const StaffLeaderboard: React.FC<StaffLeaderboardProps> = ({ staffList, t
                 </div>
 
                 {/* KPI Revenue & Progress Bar */}
-                <div className="space-y-1.5 my-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl">
+                <div className="space-y-1.5 my-3 bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
                   <div className="flex justify-between items-baseline text-xs">
                     <span className="text-slate-500 dark:text-slate-400 font-medium">Doanh số đạt:</span>
-                    <span className="font-bold text-slate-900 dark:text-white text-sm">
+                    <span className="font-black text-slate-900 dark:text-white text-sm">
                       {formatVND(staff.revenue)}
                     </span>
                   </div>
 
                   {/* Progress Bar */}
-                  <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-slate-200 dark:bg-slate-700/80 rounded-full h-2 overflow-hidden shadow-inner">
                     <div
                       className={`h-2 rounded-full transition-all duration-1000 ${
                         percent >= 100
-                          ? 'bg-emerald-500'
+                          ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
                           : percent >= 70
-                          ? 'bg-teal-500'
+                          ? 'bg-gradient-to-r from-teal-500 to-cyan-400'
                           : percent >= 40
-                          ? 'bg-blue-500'
-                          : 'bg-amber-500'
+                          ? 'bg-gradient-to-r from-blue-500 to-indigo-400'
+                          : 'bg-gradient-to-r from-amber-500 to-orange-400'
                       }`}
                       style={{ width: `${Math.min(percent, 100)}%` }}
                     />
@@ -148,10 +160,10 @@ export const StaffLeaderboard: React.FC<StaffLeaderboardProps> = ({ staffList, t
 
                   <div className="flex justify-between items-center text-[11px] text-slate-500 dark:text-slate-400 pt-0.5">
                     <span>
-                      Tiến độ: <b className="text-emerald-600 dark:text-emerald-400">{formatPercent(percent)}</b>
+                      Tiến độ: <b className="text-emerald-600 dark:text-emerald-400 font-bold">{formatPercent(percent)}</b>
                     </span>
                     <span>
-                      Còn lại: <b className="text-rose-500 dark:text-rose-400">{formatCompactVND(staff.remaining)}</b>
+                      Còn lại: <b className="text-rose-500 dark:text-rose-400 font-bold">{formatCompactVND(staff.remaining)}</b>
                     </span>
                   </div>
                 </div>

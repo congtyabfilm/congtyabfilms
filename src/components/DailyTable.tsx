@@ -110,21 +110,27 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
         </div>
       </div>
 
+      {/* Mobile Swipe Hint */}
+      <div className="sm:hidden px-4 py-1.5 bg-emerald-50/60 dark:bg-emerald-950/30 text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center justify-between border-b border-emerald-100/60 dark:border-emerald-900/40">
+        <span>👈 Vuốt ngang xem đủ các cột</span>
+        <span className="font-semibold">Cột Ngày được cố định</span>
+      </div>
+
       {/* Table content */}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto relative scroll-smooth">
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="bg-slate-50 dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200 dark:border-slate-700 uppercase tracking-wider">
-              <th className="py-3 px-4">Ngày</th>
-              <th className="py-3 px-3 text-right">Chi Phí QC FB</th>
-              <th className="py-3 px-3 text-right">CP/Khách</th>
-              <th className="py-3 px-3 text-right">DT Facebook</th>
-              <th className="py-3 px-3 text-right">DT Google</th>
-              <th className="py-3 px-3 text-right text-emerald-600 dark:text-emerald-400">Tổng DT Ngày</th>
-              <th className="py-3 px-3 text-center">Khách mới</th>
-              <th className="py-3 px-3 text-center">SĐT</th>
-              <th className="py-3 px-3 text-center">Đơn</th>
-              <th className="py-3 px-3 text-center">Tỷ lệ chốt</th>
+              <th className="py-3 px-4 sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 shadow-[2px_0_4px_rgba(0,0,0,0.06)] whitespace-nowrap">Ngày</th>
+              <th className="py-3 px-3 text-right whitespace-nowrap">Chi Phí QC FB</th>
+              <th className="py-3 px-3 text-right whitespace-nowrap">CP/Khách</th>
+              <th className="py-3 px-3 text-right whitespace-nowrap">DT Facebook</th>
+              <th className="py-3 px-3 text-right whitespace-nowrap">DT Google</th>
+              <th className="py-3 px-3 text-right text-emerald-600 dark:text-emerald-400 whitespace-nowrap">Tổng DT Ngày</th>
+              <th className="py-3 px-3 text-center whitespace-nowrap">Khách mới</th>
+              <th className="py-3 px-3 text-center whitespace-nowrap">SĐT</th>
+              <th className="py-3 px-3 text-center whitespace-nowrap">Đơn</th>
+              <th className="py-3 px-3 text-center whitespace-nowrap">Tỷ lệ chốt</th>
               <th className="py-3 px-2 text-center w-8"></th>
             </tr>
           </thead>
@@ -136,11 +142,15 @@ export const DailyTable: React.FC<DailyTableProps> = ({ dailyData, staffList, mo
                 <React.Fragment key={row.dayIndex}>
                   <tr
                     onClick={() => toggleRow(row.dayIndex)}
-                    className={`cursor-pointer transition hover:bg-slate-50/80 dark:hover:bg-slate-700/40 ${
+                    className={`group cursor-pointer transition hover:bg-slate-50/80 dark:hover:bg-slate-700/40 ${
                       isExpanded ? 'bg-emerald-50/50 dark:bg-emerald-950/20' : ''
                     }`}
                   >
-                    <td className="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap">
+                    <td className={`py-3 px-4 font-semibold text-slate-800 dark:text-slate-200 whitespace-nowrap sticky left-0 z-10 shadow-[2px_0_4px_rgba(0,0,0,0.06)] transition-colors ${
+                      isExpanded
+                        ? 'bg-emerald-50 dark:bg-emerald-950'
+                        : 'bg-white dark:bg-slate-800 group-hover:bg-slate-50 dark:group-hover:bg-slate-700'
+                    }`}>
                       {formatDateDDMMYYYY(row.dateLabel, row.dayIndex)}
                     </td>
                     <td className="py-3 px-3 text-right text-rose-600 dark:text-rose-400 font-medium whitespace-nowrap">
