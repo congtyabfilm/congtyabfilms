@@ -73,10 +73,13 @@ function normalizeDashboardData(data: DashboardData): DashboardData {
 
   const month = data.month || 9;
   const year = data.year || 2026;
+  const daysInMonth = new Date(year, month, 0).getDate();
 
-  // 1. Chuẩn hóa & Tự động tính toán các trường nhập liệu của từng ngày
+  // 1. Chỉ lấy đúng số ngày trong tháng dương lịch (loại bỏ hoàn toàn ngày tràn sang tháng sau như 01/10 trong tháng 9)
   if (data.daily && Array.isArray(data.daily)) {
-    data.daily = data.daily.map((d, idx) => {
+    data.daily = data.daily
+      .filter((d, idx) => (d.dayIndex || idx + 1) <= daysInMonth)
+      .map((d, idx) => {
       // Tính tổng đơn và tổng doanh số từ các nhân sự trong ngày đó
       let staffOrdersSum = 0;
       let staffRevenueSum = 0;
@@ -205,6 +208,20 @@ function normalizeDashboardData(data: DashboardData): DashboardData {
     data.overview.closingRatePhones = totPhones > 0 ? parseFloat(((totOrders / totPhones) * 100).toFixed(2)) : 0;
     data.overview.costPerOrder = totOrders > 0 ? Math.round(data.overview.fbAdsCostBeforeTax / totOrders) : 0;
     data.overview.costPerLead = totLeads > 0 ? Math.round(data.overview.fbAdsCostBeforeTax / totLeads) : 0;
+
+    // 4. Tự động tính áp lực về đích / cần đạt mỗi ngày theo số ngày còn lại trong tháng dương lịch
+    let lastActiveDay = 1;
+    data.daily.forEach((d) => {
+      if ((d.dayIndex || 1) <= daysInMonth && (d.totalRevenue > 0 || d.fbAdsCostBeforeTax > 0 || d.orders > 0)) {
+        if ((d.dayIndex || 1) > lastActiveDay) lastActiveDay = d.dayIndex || 1;
+      }
+    });
+
+    const remainingRevenue = Math.max(0, (data.overview.targetRevenue || 800000000) - data.overview.totalRevenue);
+    data.overview.remainingRevenue = remainingRevenue;
+
+    const remainingDays = Math.max(1, daysInMonth - lastActiveDay);
+    data.overview.targetDaily = remainingRevenue > 0 ? Math.round(remainingRevenue / remainingDays) : 0;
   }
 
   return data;

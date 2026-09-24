@@ -292,13 +292,19 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({
             <RenderDeltaBadge comparison={periodMetrics.fbAdsCost} isCost={true} />
           </div>
 
-          <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between text-xs">
-            <span className="text-slate-500 dark:text-slate-400 font-medium">
-              Chiếm % Tổng Doanh Thu:
-            </span>
-            <span className="font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-md">
-              {formatPercent(periodMetrics.fbAdsPercent)}
-            </span>
+          <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700/60 space-y-1 text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-slate-500 dark:text-slate-400 font-medium">
+                Chiếm % Tổng Doanh Thu:
+              </span>
+              <span className="font-extrabold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-2 py-0.5 rounded-md">
+                {formatPercent(periodMetrics.fbAdsPercent)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-1 border-t border-dashed border-slate-100 dark:border-slate-700/40">
+              <span>Chưa thuế: <b className="text-slate-700 dark:text-slate-200">{formatCompactVND(periodMetrics.fbAdsCostBeforeTax.current)}</b></span>
+              <span>CP/Khách: <b className="text-blue-600 dark:text-blue-400">{periodMetrics.totalLeads.current > 0 ? formatVND(Math.round(periodMetrics.fbAdsCostBeforeTax.current / periodMetrics.totalLeads.current)) : '-'}</b></span>
+            </div>
           </div>
         </div>
 

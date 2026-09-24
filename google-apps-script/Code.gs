@@ -280,9 +280,9 @@ function extractMonthData(ss, month, year, availableMonths) {
   const dailyData = [];
   const overviewStartRow = oHeaderRowIdx + 2; // Hàng bắt đầu ngày trong Sheet Tháng
   const saleStartRow = 4; // Dòng 5 (index 4) trong Sheet Sale
-  const maxDays = 31;
+  const daysInMonth = new Date(year, month, 0).getDate(); // Số ngày thực tế theo lịch dương (tháng 9 = 30 ngày)
 
-  for (let i = 0; i < maxDays; i++) {
+  for (let i = 0; i < daysInMonth; i++) {
     const oRowIdx = overviewStartRow + i;
     const sRowIdx = saleStartRow + i;
 
@@ -358,6 +358,16 @@ function extractMonthData(ss, month, year, availableMonths) {
     });
   }
 
+  // Tự động tính ngày còn lại và áp lực về đích theo lịch dương (không phụ thuộc công thức sheet)
+  let lastActiveDay = 1;
+  dailyData.forEach(function(d) {
+    if (d.dayIndex <= daysInMonth && (d.totalRevenue > 0 || d.fbAdsCostBeforeTax > 0 || d.orders > 0)) {
+      if (d.dayIndex > lastActiveDay) lastActiveDay = d.dayIndex;
+    }
+  });
+  const remainingDays = Math.max(1, daysInMonth - lastActiveDay);
+  const autoTargetDaily = remainingRevenue > 0 ? Math.round(remainingRevenue / remainingDays) : 0;
+
   return {
     success: true,
     month: month,
@@ -369,7 +379,9 @@ function extractMonthData(ss, month, year, availableMonths) {
       targetRevenue: targetRevenue,
       totalRevenue: totalRevenue,
       remainingRevenue: remainingRevenue,
-      targetDaily: targetDaily,
+      targetDaily: autoTargetDaily || targetDaily,
+      remainingDays: remainingDays,
+      daysInMonth: daysInMonth,
       fbRevenue: fbRevenue,
       ggRevenue: ggRevenue,
       fbAdsCost: fbAdsCost,
