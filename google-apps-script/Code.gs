@@ -1,16 +1,15 @@
 /**
- * GOOGLE APPS SCRIPT API CHO DASHBOARD AB FILMS (BẢN CẬP NHẬT)
- * -------------------------------------------------------------
- * Chức năng:
- * 1. Tự động nhận diện tất cả các tháng (Sheet "Tháng M/YYYY" & "Sale tháng M/YYYY")
- * 2. Tự động nhận diện nhân sự Sale từ Cột J (Khớp chuẩn hàng dữ liệu tổng & hàng ngày)
- * 3. Chuẩn hóa định dạng ngày thành dd/MM/yyyy (ví dụ: 01/09/2026)
- * 4. Tính toán chuẩn: Chi phí QC FB (trước/sau thuế), Doanh thu FB/GG, Tỷ lệ chốt, ROAS
- * 5. ĐỒNG BỘ 1 CHIỀU (Read-only), an toàn tuyệt đối 100%, không ghi đè vào Sheet.
+ * GOOGLE APPS SCRIPT API CHO DASHBOARD AB FILMS (PHIÊN BẢN CHỐNG LỖI CỘT)
+ * --------------------------------------------------------------------------
+ * Điểm nâng cấp đặc biệt:
+ * 1. Chỉ lấy số liệu từ tháng 01/2026 trở đi (loại bỏ hoàn toàn các tháng năm 2025).
+ * 2. TỰ ĐỘNG TÌM CỘT THEO TÊN TIÊU ĐỀ: Kể cả khi bạn thêm, sửa, chèn thêm cột hay
+ *    dịch chuyển cột trong Google Sheet thì hệ thống VẪN TỰ TÌM ĐƯỢC và KHÔNG BỊ LỖI!
+ * 3. Chuẩn hóa ngày dạng dd/MM/yyyy.
+ * 4. ĐỒNG BỘ 1 CHIỀU (Read-only), an toàn tuyệt đối 100%.
  */
 
-// Hệ số thuế phí FB Ads (hệ số 1.1121 khớp đúng công thức ô D7 sheet Tháng)
-const FB_TAX_RATE = 1.1121; 
+const FB_TAX_RATE = 1.1121; // Hệ số thuế phí FB Ads ô D7
 
 function doGet(e) {
   try {
@@ -18,7 +17,7 @@ function doGet(e) {
     const action = params.action || 'getData';
     const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-    // 1. Lấy danh sách các tháng có sẵn trong file Sheet
+    // 1. Quét danh sách tháng (Chỉ lấy từ tháng 01/2026 trở đi)
     const availableMonths = scanAvailableMonths(ss);
 
     if (action === 'getMonths') {
@@ -28,7 +27,7 @@ function doGet(e) {
       });
     }
 
-    // 2. Xác định tháng cần lấy dữ liệu (mặc định lấy tháng mới nhất nếu không truyền param)
+    // 2. Xác định tháng được chọn (mặc định lấy tháng mới nhất >= 2026)
     let selectedMonth, selectedYear;
     if (params.month && params.year) {
       selectedMonth = parseInt(params.month, 10);
@@ -39,11 +38,11 @@ function doGet(e) {
     } else {
       return createJsonResponse({
         success: false,
-        message: 'Không tìm thấy sheet định dạng Tháng M/YYYY nào trong bảng tính!'
+        message: 'Không tìm thấy sheet nào từ tháng 01/2026 trở đi!'
       });
     }
 
-    // 3. Trích xuất toàn bộ dữ liệu của tháng được chọn
+    // 3. Trích xuất toàn bộ dữ liệu của tháng
     const data = extractMonthData(ss, selectedMonth, selectedYear, availableMonths);
     return createJsonResponse(data);
 
@@ -57,7 +56,7 @@ function doGet(e) {
 }
 
 /**
- * Quét toàn bộ các sheet để tìm cặp: "Tháng M/YYYY" và "Sale tháng M/YYYY"
+ * Quét các sheet - CHỈ LẤY TỪ NĂM 2026 TRỞ ĐI
  */
 function scanAvailableMonths(ss) {
   const sheets = ss.getSheets();
@@ -70,26 +69,30 @@ function scanAvailableMonths(ss) {
     if (match) {
       const m = parseInt(match[1], 10);
       const y = parseInt(match[2], 10);
-      const saleSheetName = `Sale tháng ${m}/${y}`;
-      const saleSheet = ss.getSheetByName(saleSheetName);
       
-      months.push({
-        id: `${m}_${y}`,
-        month: m,
-        year: y,
-        label: `Tháng ${m < 10 ? '0' + m : m}/${y}`,
-        overviewSheet: name,
-        saleSheet: saleSheet ? saleSheetName : null
-      });
+      // CHỈ LẤY TỪ NĂM 2026 TRỞ ĐI (BỎ 2025)
+      if (y >= 2026) {
+        const saleSheetName = `Sale tháng ${m}/${y}`;
+        const saleSheet = ss.getSheetByName(saleSheetName);
+        
+        months.push({
+          id: `${m}_${y}`,
+          month: m,
+          year: y,
+          label: `Tháng ${m < 10 ? '0' + m : m}/${y}`,
+          overviewSheet: name,
+          saleSheet: saleSheet ? saleSheetName : null
+        });
+      }
     }
   });
 
-  // Sắp xếp giảm dần theo thời gian (tháng mới nhất lên đầu)
+  // Sắp xếp giảm dần (tháng mới nhất lên đầu)
   return months.sort((a, b) => (b.year * 100 + b.month) - (a.year * 100 + a.month));
 }
 
 /**
- * Trích xuất dữ liệu chi tiết của 1 tháng
+ * Trích xuất dữ liệu chi tiết của 1 tháng (Tự tìm cột thông minh)
  */
 function extractMonthData(ss, month, year, availableMonths) {
   const overviewSheetName = `Tháng ${month}/${year}`;
@@ -105,77 +108,120 @@ function extractMonthData(ss, month, year, availableMonths) {
     };
   }
 
-  // Lấy dữ liệu dạng mảng values từ 2 sheet
   const overviewValues = overviewSheet.getDataRange().getValues();
   const saleValues = saleSheet ? saleSheet.getDataRange().getValues() : [];
 
+  // =================== TÌM CỘT ĐỘNG TRONG SHEET THÁNG ===================
+  // Tìm hàng chứa tiêu đề "Facebook", "Google", "Ngày" (thường là hàng 12, index 11)
+  let oHeaderRowIdx = 11;
+  for (let r = 0; r < Math.min(20, overviewValues.length); r++) {
+    const rowStr = overviewValues[r].map(c => String(c).toLowerCase()).join(' ');
+    if (rowStr.includes('facebook') && rowStr.includes('ngày')) {
+      oHeaderRowIdx = r;
+      break;
+    }
+  }
+
+  const oHeaders = overviewValues[oHeaderRowIdx] || [];
+  let colO_FbRev = findColIndex(oHeaders, ['facebook']);
+  let colO_GgRev = findColIndex(oHeaders, ['google', 'khác']);
+  let colO_Date = findColIndex(oHeaders, ['ngày', 'thứ', 'date']);
+  let colO_TotalRev = findColIndex(oHeaders, ['tổng theo từng ngày', 'tổng theo ngày', 'tổng']);
+
+  // Giá trị dự phòng nếu không tìm thấy
+  if (colO_FbRev === -1) colO_FbRev = 2;
+  if (colO_GgRev === -1) colO_GgRev = 3;
+  if (colO_Date === -1) colO_Date = 4;
+  if (colO_TotalRev === -1) colO_TotalRev = 5;
+
+  // =================== TÌM CỘT ĐỘNG TRONG SHEET SALE ===================
+  let sHeaderRowIdx = 1;
+  for (let r = 0; r < Math.min(5, saleValues.length); r++) {
+    const rowStr = saleValues[r].map(c => String(c).toLowerCase()).join(' ');
+    if (rowStr.includes('khách') && rowStr.includes('sđt')) {
+      sHeaderRowIdx = r;
+      break;
+    }
+  }
+
+  const sHeaders = saleValues[sHeaderRowIdx] || [];
+  let colS_Date = 0;
+  let colS_Leads = findColIndex(sHeaders, ['khách mới', 'khách']);
+  let colS_Phones = findColIndex(sHeaders, ['sđt', 'điện thoại']);
+  let colS_CostPerOrder = findColIndex(sHeaders, ['cp/đơn', 'chi phí/đơn']);
+  let colS_AdsCost = findColIndex(sHeaders, ['chi phí qc', 'chi phí', 'cp qc']);
+  let colS_CostPerLead = findColIndex(sHeaders, ['cp/khách', 'chi phí/khách']);
+  let colS_Orders = findColIndex(sHeaders, ['đơn', 'số đơn']);
+  let colS_Revenue = findColIndex(sHeaders, ['doanh số', 'doanh thu']);
+
+  if (colS_Leads === -1) colS_Leads = 1;
+  if (colS_Phones === -1) colS_Phones = 2;
+  if (colS_CostPerOrder === -1) colS_CostPerOrder = 3;
+  if (colS_AdsCost === -1) colS_AdsCost = 4;
+  if (colS_CostPerLead === -1) colS_CostPerLead = 5;
+  if (colS_Orders === -1) colS_Orders = 6;
+  if (colS_Revenue === -1) colS_Revenue = 7;
+
   // =================== 1. TỰ ĐỘNG NHẬN DIỆN NHÂN SỰ SALE ===================
-  // Cấu trúc Sheet Sale:
-  // Hàng 1 (index 0): Header nhân viên (Cột J..: "Trang - 150.000.000đ hoàn thành 89,84%")
-  // Hàng 2 (index 1): Tiêu đề cột ("Khách mới", "SĐT", "ĐƠN", "DOANH SỐ", "TỈ LỆ CHỐT")
-  // Hàng 3 (index 2): SỐ LIỆU TỔNG THÁNG CỦA NHÂN VIÊN (Khách mới, SĐT, Đơn, Doanh số, Tỷ lệ chốt)
-  // Hàng 4 (index 3): "Còn lại: 15.234.000 đ"
-  // Hàng 5 trở đi (index 4): Chi tiết từng ngày
   const staffList = [];
-  const staffColMap = []; // Lưu vị trí cột bắt đầu của từng nhân viên
+  const staffColMap = [];
 
   if (saleValues.length > 2) {
     const row1 = saleValues[0] || [];
     const row2 = saleValues[1] || [];
-    const row3 = saleValues[2] || [];
-    const row4 = saleValues[3] || [];
+    const row3 = saleValues[2] || []; // Hàng số liệu tổng tháng của nhân viên
+    const row4 = saleValues[3] || []; // Hàng còn lại
 
-    // Nhân viên bắt đầu từ Cột J (Index 9 trong mảng 0-based)
-    for (let c = 9; c < row1.length; c += 5) {
+    // Quét tìm các nhân viên từ cột H trở đi
+    for (let c = 8; c < row1.length; c++) {
       const headerText = String(row1[c] || '').trim();
-      if (!headerText) continue;
+      // Nhận diện ô có tên nhân viên (chứa "-" hoặc "hoàn thành" hoặc không rỗng)
+      if (headerText && (headerText.includes('-') || headerText.toLowerCase().includes('hoàn thành') || headerText.length > 2)) {
+        const nameParts = headerText.split(/[-–:]/);
+        const staffName = nameParts[0].trim();
 
-      // Tách tên nhân viên (ví dụ: "Trang - 150.000.000đ..." -> "Trang")
-      const nameParts = headerText.split(/[-–:]/);
-      const staffName = nameParts[0].trim();
+        // Tránh trùng lặp tên nhân viên
+        if (staffList.some(s => s.name.toLowerCase() === staffName.toLowerCase())) continue;
 
-      // Trích xuất Target KPI (ví dụ 150.000.000)
-      let targetKpi = 150000000;
-      const targetMatch = headerText.replace(/\./g, '').match(/(\d{6,12})/);
-      if (targetMatch) {
-        targetKpi = parseNumber(targetMatch[1]);
+        let targetKpi = 150000000;
+        const targetMatch = headerText.replace(/\./g, '').match(/(\d{6,12})/);
+        if (targetMatch) {
+          targetKpi = parseNumber(targetMatch[1]);
+        }
+
+        // Lấy đúng hàng 3 (index 2)
+        const leads = parseNumber(row3[c]);
+        const phones = parseNumber(row3[c + 1]);
+        const orders = parseNumber(row3[c + 2]);
+        const revenue = parseNumber(row3[c + 3]);
+        
+        let remaining = parseNumber(row4[c]);
+        if (remaining === 0 && targetKpi > revenue) {
+          remaining = targetKpi - revenue;
+        }
+
+        const closingRateLeads = leads > 0 ? (orders / leads) * 100 : 0;
+        const closingRatePhones = phones > 0 ? (orders / phones) * 100 : 0;
+        const completionRate = targetKpi > 0 ? (revenue / targetKpi) * 100 : 0;
+
+        staffList.push({
+          id: `staff_${staffList.length + 1}`,
+          name: staffName,
+          headerRaw: headerText,
+          target: targetKpi,
+          revenue: revenue,
+          remaining: remaining,
+          completionRate: parseFloat(completionRate.toFixed(2)),
+          leads: leads,
+          phones: phones,
+          orders: orders,
+          closingRateLeads: parseFloat(closingRateLeads.toFixed(2)),
+          closingRatePhones: parseFloat(closingRatePhones.toFixed(2)),
+          colStart: c
+        });
+
+        staffColMap.push({ name: staffName, colStart: c });
       }
-
-      // HÀNG 3 (Index 2): Lấy đúng hàng số liệu tổng tháng của nhân viên!
-      const leads = parseNumber(row3[c]);
-      const phones = parseNumber(row3[c + 1]);
-      const orders = parseNumber(row3[c + 2]);
-      const revenue = parseNumber(row3[c + 3]);
-      
-      // HÀNG 4 (Index 3): Số tiền còn lại
-      let remaining = parseNumber(row4[c]);
-      if (remaining === 0 && targetKpi > revenue) {
-        remaining = targetKpi - revenue;
-      }
-
-      // Tính tỷ lệ chốt tự động
-      const closingRateLeads = leads > 0 ? (orders / leads) * 100 : 0;
-      const closingRatePhones = phones > 0 ? (orders / phones) * 100 : 0;
-      const completionRate = targetKpi > 0 ? (revenue / targetKpi) * 100 : 0;
-
-      const staffObj = {
-        id: `staff_${staffList.length + 1}`,
-        name: staffName,
-        headerRaw: headerText,
-        target: targetKpi,
-        revenue: revenue,
-        remaining: remaining,
-        completionRate: parseFloat(completionRate.toFixed(2)),
-        leads: leads,
-        phones: phones,
-        orders: orders,
-        closingRateLeads: parseFloat(closingRateLeads.toFixed(2)),
-        closingRatePhones: parseFloat(closingRatePhones.toFixed(2)),
-        colStart: c
-      };
-
-      staffList.push(staffObj);
-      staffColMap.push({ name: staffName, colStart: c });
     }
   }
 
@@ -183,24 +229,22 @@ function extractMonthData(ss, month, year, availableMonths) {
   const budget = parseNumber(getSafeCell(overviewValues, 1, 2));
   const targetRevenue = parseNumber(getSafeCell(overviewValues, 1, 3));
   
-  // Chi phí QC FB trước thuế và tổng sale từ Sheet Sale (Hàng 3 - index 2)
-  let fbAdsCostBeforeTax = 0;
   let totalLeads = 0;
   let totalPhones = 0;
   let totalOrders = 0;
   let costPerOrder = 0;
   let costPerLead = 0;
+  let fbAdsCostBeforeTax = 0;
 
   if (saleValues.length > 2) {
-    totalLeads = parseNumber(getSafeCell(saleValues, 2, 1));
-    totalPhones = parseNumber(getSafeCell(saleValues, 2, 2));
-    costPerOrder = parseNumber(getSafeCell(saleValues, 2, 3));
-    fbAdsCostBeforeTax = parseNumber(getSafeCell(saleValues, 2, 4)) || parseNumber(getSafeCell(saleValues, 3, 4));
-    costPerLead = parseNumber(getSafeCell(saleValues, 2, 5));
-    totalOrders = parseNumber(getSafeCell(saleValues, 2, 6));
+    totalLeads = parseNumber(getSafeCell(saleValues, 2, colS_Leads));
+    totalPhones = parseNumber(getSafeCell(saleValues, 2, colS_Phones));
+    costPerOrder = parseNumber(getSafeCell(saleValues, 2, colS_CostPerOrder));
+    fbAdsCostBeforeTax = parseNumber(getSafeCell(saleValues, 2, colS_AdsCost)) || parseNumber(getSafeCell(saleValues, 3, colS_AdsCost));
+    costPerLead = parseNumber(getSafeCell(saleValues, 2, colS_CostPerLead));
+    totalOrders = parseNumber(getSafeCell(saleValues, 2, colS_Orders));
   }
 
-  // Chi phí QC FB sau thuế từ D7 hoặc tính bằng fbAdsCostBeforeTax * FB_TAX_RATE
   let fbAdsCost = parseNumber(getSafeCell(overviewValues, 6, 3));
   if (fbAdsCost === 0 && fbAdsCostBeforeTax > 0) {
     fbAdsCost = Math.round(fbAdsCostBeforeTax * FB_TAX_RATE);
@@ -209,25 +253,25 @@ function extractMonthData(ss, month, year, availableMonths) {
   const ggAdsCost = parseNumber(getSafeCell(overviewValues, 7, 3));
   const totalAdsCost = parseNumber(getSafeCell(overviewValues, 6, 4)) || (fbAdsCost + ggAdsCost);
 
-  const fbRevenue = parseNumber(getSafeCell(overviewValues, 12, 2));
-  const ggRevenue = parseNumber(getSafeCell(overviewValues, 12, 3));
+  // Lấy tổng doanh thu FB từ dòng tổng hoặc từ sheet Sale
+  const fbRevenue = parseNumber(getSafeCell(overviewValues, 12, colO_FbRev)) || parseNumber(getSafeCell(saleValues, 2, colS_Revenue));
+  const ggRevenue = parseNumber(getSafeCell(overviewValues, 12, colO_GgRev));
   const totalRevenue = parseNumber(getSafeCell(overviewValues, 8, 3)) || (fbRevenue + ggRevenue);
   const remainingRevenue = parseNumber(getSafeCell(overviewValues, 9, 3)) || (targetRevenue - totalRevenue);
   const targetDaily = parseNumber(getSafeCell(overviewValues, 10, 3));
 
-  // Tỷ lệ chốt toàn đội
+  // Tỷ lệ chi phí QC / Doanh thu
+  const fbAdsPercent = fbRevenue > 0 ? parseFloat(((fbAdsCost / fbRevenue) * 100).toFixed(2)) : 0;
+  const ggAdsPercent = ggRevenue > 0 ? parseFloat(((ggAdsCost / ggRevenue) * 100).toFixed(2)) : 0;
+  const totalAdsPercent = totalRevenue > 0 ? parseFloat(((totalAdsCost / totalRevenue) * 100).toFixed(2)) : 0;
+
   const closingRateLeads = totalLeads > 0 ? parseFloat(((totalOrders / totalLeads) * 100).toFixed(2)) : 0;
   const closingRatePhones = totalPhones > 0 ? parseFloat(((totalOrders / totalPhones) * 100).toFixed(2)) : 0;
 
-  // ROAS (Doanh thu / Chi phí QC)
-  const roasFB = fbAdsCost > 0 ? parseFloat((fbRevenue / fbAdsCost).toFixed(2)) : 0;
-  const roasGG = ggAdsCost > 0 ? parseFloat((ggRevenue / ggAdsCost).toFixed(2)) : 0;
-  const roasTotal = totalAdsCost > 0 ? parseFloat((totalRevenue / totalAdsCost).toFixed(2)) : 0;
-
   // =================== 3. BÓC TÁCH DỮ LIỆU THEO NGÀY ===================
   const dailyData = [];
-  const overviewStartRow = 13; // Sheet Tháng bắt đầu từ dòng 14 (index 13)
-  const saleStartRow = 4;     // Sheet Sale bắt đầu từ dòng 5 (index 4)
+  const overviewStartRow = oHeaderRowIdx + 2; // Hàng bắt đầu ngày trong Sheet Tháng
+  const saleStartRow = 4; // Dòng 5 (index 4) trong Sheet Sale
   const maxDays = 31;
 
   for (let i = 0; i < maxDays; i++) {
@@ -238,25 +282,22 @@ function extractMonthData(ss, month, year, availableMonths) {
     const sRow = saleValues[sRowIdx] || [];
 
     // Kiểm tra dòng có dữ liệu không
-    if (!oRow[2] && !sRow[4] && !oRow[4] && !sRow[0]) continue;
+    if (!oRow[colO_FbRev] && !sRow[colS_AdsCost] && !oRow[colO_Date] && !sRow[0]) continue;
 
-    // Chuẩn hóa định dạng ngày thành dd/MM/yyyy
-    const rawDate = oRow[4] || sRow[0];
+    // Chuẩn hóa ngày dd/MM/yyyy
+    const rawDate = oRow[colO_Date] || sRow[0];
     const dateFormatted = formatToDDMMYYYY(rawDate, i + 1, month, year);
 
-    // Doanh thu FB & GG theo ngày (Sheet Tháng Cột C, D, F)
-    const dayFbRev = parseNumber(oRow[2]);
-    const dayGgRev = parseNumber(oRow[3]);
-    const dayTotalRev = parseNumber(oRow[5]) || (dayFbRev + dayGgRev);
+    const dayFbRev = parseNumber(oRow[colO_FbRev]);
+    const dayGgRev = parseNumber(oRow[colO_GgRev]);
+    const dayTotalRev = parseNumber(oRow[colO_TotalRev]) || (dayFbRev + dayGgRev);
 
-    // Chi phí QC FB ngày từ Sheet Sale Cột E (chưa thuế)
-    const dayFbAdsBeforeTax = parseNumber(sRow[4]);
+    const dayFbAdsBeforeTax = parseNumber(sRow[colS_AdsCost]);
     const dayFbAdsAfterTax = Math.round(dayFbAdsBeforeTax * FB_TAX_RATE);
 
-    // Chỉ số tổng hợp Sale trong ngày (Sheet Sale B, C, G)
-    const dayLeads = parseNumber(sRow[1]);
-    const dayPhones = parseNumber(sRow[2]);
-    const dayOrders = parseNumber(sRow[6]);
+    const dayLeads = parseNumber(sRow[colS_Leads]);
+    const dayPhones = parseNumber(sRow[colS_Phones]);
+    const dayOrders = parseNumber(sRow[colS_Orders]);
     const dayClosingRate = dayLeads > 0 ? parseFloat(((dayOrders / dayLeads) * 100).toFixed(2)) : 0;
 
     // Chi tiết từng nhân viên trong ngày
@@ -312,9 +353,10 @@ function extractMonthData(ss, month, year, availableMonths) {
       fbAdsCostBeforeTax: fbAdsCostBeforeTax,
       ggAdsCost: ggAdsCost,
       totalAdsCost: totalAdsCost,
-      roasFB: roasFB,
-      roasGG: roasGG,
-      roasTotal: roasTotal,
+      // Tỷ lệ % chi phí theo doanh thu (theo đúng yêu cầu của user)
+      fbAdsPercent: fbAdsPercent,
+      ggAdsPercent: ggAdsPercent,
+      totalAdsPercent: totalAdsPercent,
       totalLeads: totalLeads,
       totalPhones: totalPhones,
       totalOrders: totalOrders,
@@ -330,6 +372,21 @@ function extractMonthData(ss, month, year, availableMonths) {
 }
 
 /**
+ * Tìm vị trí cột dựa trên từ khóa tiêu đề (không sợ chèn hay đổi vị trí cột)
+ */
+function findColIndex(rowArray, keywords) {
+  for (let i = 0; i < rowArray.length; i++) {
+    const val = String(rowArray[i] || '').toLowerCase().trim();
+    for (let k = 0; k < keywords.length; k++) {
+      if (val.includes(keywords[k])) {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
+
+/**
  * Định dạng ngày sang dd/MM/yyyy chuẩn
  */
 function formatToDDMMYYYY(val, dayIdx, month, year) {
@@ -339,7 +396,6 @@ function formatToDDMMYYYY(val, dayIdx, month, year) {
     return `${dd}/${mm}/${year}`;
   }
 
-  // Trường hợp là JavaScript Date object
   if (val instanceof Date) {
     const d = val.getDate();
     const m = val.getMonth() + 1;
@@ -351,12 +407,10 @@ function formatToDDMMYYYY(val, dayIdx, month, year) {
 
   const str = String(val).trim();
 
-  // Đã là định dạng dd/mm/yyyy
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(str)) {
     return str;
   }
 
-  // Dạng "Thứ Ba, 1 tháng 9"
   const match = str.match(/(\d{1,2})\s*(?:tháng|\/|-)\s*(\d{1,2})/i);
   if (match) {
     const d = parseInt(match[1], 10);
@@ -366,7 +420,6 @@ function formatToDDMMYYYY(val, dayIdx, month, year) {
     return `${dd}/${mm}/${year}`;
   }
 
-  // Chuỗi ngày GMT: Tue Sep 01 2026...
   const parsed = new Date(str);
   if (!isNaN(parsed.getTime())) {
     const d = parsed.getDate();
@@ -382,7 +435,6 @@ function formatToDDMMYYYY(val, dayIdx, month, year) {
   return `${dd}/${mm}/${year}`;
 }
 
-// Hàm hỗ trợ đọc an toàn ô dữ liệu
 function getSafeCell(matrix, row, col) {
   if (matrix && matrix[row] && matrix[row][col] !== undefined) {
     return matrix[row][col];
@@ -390,7 +442,6 @@ function getSafeCell(matrix, row, col) {
   return 0;
 }
 
-// Hàm chuẩn hóa chuỗi hoặc số thành kiểu số thực Number
 function parseNumber(val) {
   if (val === null || val === undefined) return 0;
   if (typeof val === 'number') return isNaN(val) ? 0 : val;
@@ -399,7 +450,6 @@ function parseNumber(val) {
   return isNaN(num) ? 0 : num;
 }
 
-// Trả về JSON với MIME type chuẩn để tránh lỗi CORS
 function createJsonResponse(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);

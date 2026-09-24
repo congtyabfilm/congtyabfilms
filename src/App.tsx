@@ -1,16 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { Header } from './components/Header';
+import { PeriodFilter } from './components/PeriodFilter';
 import { KPIOverview } from './components/KPIOverview';
 import { RevenueChart } from './components/RevenueChart';
 import { StaffLeaderboard } from './components/StaffLeaderboard';
 import { DailyTable } from './components/DailyTable';
-import type { DashboardData } from './types/dashboard';
+import type { DashboardData, TimePeriod } from './types/dashboard';
+import { calculatePeriodMetrics } from './utils/periodCalculator';
 import { fetchDashboardData, getSavedGasUrl } from './services/api';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
   const [selectedMonthId, setSelectedMonthId] = useState<string>('9_2026');
+  const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('month');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -93,12 +96,24 @@ export const App: React.FC = () => {
   // Xử lý khi chọn tháng khác từ menu
   const handleSelectMonth = (monthId: string) => {
     setSelectedMonthId(monthId);
+    setSelectedPeriod('month');
     loadData(monthId, false);
   };
 
   const handleRefresh = () => {
     loadData(selectedMonthId, true);
   };
+
+  // Tính toán số liệu theo kỳ xem (Toàn tháng, Hôm nay, Hôm qua, Tuần này, Tuần trước)
+  const periodMetrics = data
+    ? calculatePeriodMetrics(
+        selectedPeriod,
+        data.daily,
+        data.overview,
+        data.month || 9,
+        data.year || 2026
+      )
+    : null;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col transition-colors font-sans antialiased">
@@ -141,11 +156,20 @@ export const App: React.FC = () => {
             <RefreshCw className="w-8 h-8 animate-spin text-emerald-500" />
             <p className="text-sm font-semibold">Đang tải dữ liệu từ Google Spreadsheet...</p>
           </div>
-        ) : data ? (
+        ) : data && periodMetrics ? (
           <>
+            {/* Bộ lọc Kỳ xem: Toàn tháng / Hôm nay / Hôm qua / Tuần này / Tuần trước */}
+            <PeriodFilter
+              selectedPeriod={selectedPeriod}
+              onSelectPeriod={setSelectedPeriod}
+              periodLabel={periodMetrics.periodLabel}
+              comparisonLabel={periodMetrics.comparisonLabel}
+            />
+
             {/* 1. Quick Insights & Core Business KPIs */}
             <KPIOverview
               overview={data.overview}
+              periodMetrics={periodMetrics}
               staffList={data.staffList}
             />
 

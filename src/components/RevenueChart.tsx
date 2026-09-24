@@ -343,10 +343,10 @@ export const RevenueChart: React.FC<RevenueChartProps> = ({
             </div>
             <div className="flex justify-around w-full text-xs font-semibold pt-2 border-t border-slate-200 dark:border-slate-700">
               <span className="text-indigo-600 dark:text-indigo-400">
-                FB: {formatCompactVND(overview?.fbAdsCost)} (ROAS: {overview?.roasFB}x)
+                FB: {formatCompactVND(overview?.fbAdsCost)} ({formatPercent(overview?.fbAdsPercent || 30.27)} DT FB)
               </span>
               <span className="text-rose-600 dark:text-rose-400">
-                Google: {formatCompactVND(overview?.ggAdsCost)} (ROAS: {overview?.roasGG}x)
+                Google: {formatCompactVND(overview?.ggAdsCost)} ({formatPercent(overview?.ggAdsPercent || 16.80)} DT GG)
               </span>
             </div>
           </div>
