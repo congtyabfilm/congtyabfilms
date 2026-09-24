@@ -44,7 +44,7 @@ export const mockDashboardData: DashboardData = {
     fbAdsCostBeforeTax: 89665407,
     ggAdsCost: 30354820,
     totalAdsCost: 130071719,
-    fbAdsPercent: 19.55,
+    fbAdsPercent: 30.27,
     ggAdsPercent: 16.80,
     totalAdsPercent: 25.50,
     totalLeads: 2461,

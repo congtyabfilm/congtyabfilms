@@ -192,10 +192,11 @@ function normalizeDashboardData(data: DashboardData): DashboardData {
     }
     data.overview.totalAdsCost = data.overview.fbAdsCost + data.overview.ggAdsCost;
 
-    // Chi phí FB chiếm % TỔNG DOANH THU, Chi phí GG chiếm % TỔNG DOANH THU GOOGLE
+    // Chi phí FB chiếm % DOANH THU FACEBOOK, Chi phí GG chiếm % DOANH THU GOOGLE
     const totRev = data.overview.totalRevenue;
+    const fbRev = data.overview.fbRevenue;
     const ggRev = data.overview.ggRevenue;
-    data.overview.fbAdsPercent = totRev > 0 ? parseFloat(((data.overview.fbAdsCost / totRev) * 100).toFixed(2)) : 0;
+    data.overview.fbAdsPercent = fbRev > 0 ? parseFloat(((data.overview.fbAdsCost / fbRev) * 100).toFixed(2)) : 0;
     data.overview.ggAdsPercent = ggRev > 0 ? parseFloat(((data.overview.ggAdsCost / ggRev) * 100).toFixed(2)) : 0;
     data.overview.totalAdsPercent = totRev > 0 ? parseFloat(((data.overview.totalAdsCost / totRev) * 100).toFixed(2)) : 0;
 

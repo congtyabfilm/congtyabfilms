@@ -231,12 +231,12 @@ export function calculatePeriodMetrics(
     ? parseFloat(((currentMetrics.totalAdsCost / currentMetrics.totalRev) * 100).toFixed(2))
     : 0;
 
-  // Chi phí FB chiếm % TỔNG DOANH THU (theo đúng chỉ đạo của user)
-  const fbAdsPercent = currentMetrics.totalRev > 0
-    ? parseFloat(((currentMetrics.fbAdsCost / currentMetrics.totalRev) * 100).toFixed(2))
+  // Chi phí FB chiếm % DOANH THU FACEBOOK
+  const fbAdsPercent = currentMetrics.fbRev > 0
+    ? parseFloat(((currentMetrics.fbAdsCost / currentMetrics.fbRev) * 100).toFixed(2))
     : 0;
 
-  // Chi phí GG chiếm % TỔNG DOANH THU GOOGLE (theo đúng chỉ đạo của user)
+  // Chi phí GG chiếm % DOANH THU GOOGLE
   const ggAdsPercent = currentMetrics.ggRev > 0
     ? parseFloat(((currentMetrics.ggAdsCost / currentMetrics.ggRev) * 100).toFixed(2))
     : 0;
