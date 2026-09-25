@@ -358,15 +358,27 @@ function extractMonthData(ss, month, year, availableMonths) {
     });
   }
 
-  // Tự động tính ngày còn lại và áp lực về đích theo lịch dương (không phụ thuộc công thức sheet)
+  // Tự động tính ngày còn lại và áp lực về đích theo lịch dương và thời gian thực
+  const now = new Date();
+  const isCurrentMonth = (now.getMonth() + 1 === month) && (now.getFullYear() === year);
+  const isPastMonth = (year < now.getFullYear()) || (year === now.getFullYear() && month < (now.getMonth() + 1));
+
   let lastActiveDay = 1;
   dailyData.forEach(function(d) {
     if (d.dayIndex <= daysInMonth && (d.totalRevenue > 0 || d.fbAdsCostBeforeTax > 0 || d.orders > 0)) {
       if (d.dayIndex > lastActiveDay) lastActiveDay = d.dayIndex;
     }
   });
-  const remainingDays = Math.max(1, daysInMonth - lastActiveDay);
-  const autoTargetDaily = remainingRevenue > 0 ? Math.round(remainingRevenue / remainingDays) : 0;
+
+  let daysPassed = lastActiveDay;
+  if (isCurrentMonth) {
+    daysPassed = Math.min(daysInMonth, Math.max(now.getDate(), lastActiveDay));
+  } else if (isPastMonth) {
+    daysPassed = daysInMonth;
+  }
+
+  const remainingDays = Math.max(0, daysInMonth - daysPassed);
+  const autoTargetDaily = remainingDays > 0 && remainingRevenue > 0 ? Math.round(remainingRevenue / remainingDays) : 0;
 
   // =================== 4. BÓC TÁCH MODULE PHIM ĐIỆN ===================
   // Quét tìm dòng header của Phim điện (chứa 'tin nhắn' hoặc 'cp/tin' hoặc 'phim điện')

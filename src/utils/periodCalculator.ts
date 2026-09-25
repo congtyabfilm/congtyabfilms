@@ -1,12 +1,16 @@
-import type { DailyData, OverviewMetrics, TimePeriod, PeriodMetrics, ComparisonValue } from '../types/dashboard';
+import type { DailyData, OverviewMetrics, TimePeriod, PeriodMetrics, ComparisonValue, PhimDienSummary } from '../types/dashboard';
 
 export function calculatePeriodMetrics(
   period: TimePeriod,
   dailyData: DailyData[],
   overview: OverviewMetrics,
   month: number,
-  year: number
+  year: number,
+  phimDien?: PhimDienSummary
 ): PeriodMetrics {
+  // Số ngày tối đa trong tháng
+  const daysInMonth = new Date(year, month, 0).getDate();
+
   // Tìm ngày có số liệu mới nhất trong tháng (Anchor day)
   let anchorDay = 1;
   dailyData.forEach((d) => {
@@ -17,8 +21,25 @@ export function calculatePeriodMetrics(
     }
   });
 
-  // Số ngày tối đa trong tháng
-  const daysInMonth = new Date(year, month, 0).getDate();
+  // Kiểm tra thêm ngày có số liệu của Phim Điện
+  if (phimDien && phimDien.daily) {
+    phimDien.daily.forEach((p) => {
+      if (p.cost > 0 || p.messages > 0 || p.phones > 0) {
+        if (p.dayIndex > anchorDay) {
+          anchorDay = p.dayIndex;
+        }
+      }
+    });
+  }
+
+  // Tự động kiểm tra ngày hôm nay theo lịch hệ thống thực tế nếu xem tháng hiện tại
+  const now = new Date();
+  if (now.getMonth() + 1 === month && now.getFullYear() === year) {
+    const todayDate = now.getDate();
+    if (todayDate > anchorDay) {
+      anchorDay = Math.min(todayDate, daysInMonth);
+    }
+  }
 
   let currentDayIndexes: number[] = [];
   let prevDayIndexes: number[] = [];

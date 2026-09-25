@@ -186,7 +186,8 @@ export const App: React.FC = () => {
         data.daily,
         data.overview,
         data.month || 9,
-        data.year || 2026
+        data.year || 2026,
+        data.phimDien
       )
     : null;
 
@@ -275,6 +276,8 @@ export const App: React.FC = () => {
             <PhimDienModule
               phimDien={data.phimDien}
               monthLabel={data.monthLabel}
+              selectedPeriod={selectedPeriod}
+              periodMetrics={periodMetrics}
             />
           </>
         ) : null}

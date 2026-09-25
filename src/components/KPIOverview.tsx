@@ -46,18 +46,33 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({
   const currentYear = year || 2026;
   const daysInMonth = new Date(currentYear, currentMonth, 0).getDate(); // Số ngày thực tế theo tháng dương lịch
 
+  const now = new Date();
+  const isCurrentMonth = (now.getMonth() + 1 === currentMonth) && (now.getFullYear() === currentYear);
+  const isPastMonth = (currentYear < now.getFullYear()) || (currentYear === now.getFullYear() && currentMonth < (now.getMonth() + 1));
+
   // Tìm ngày có dữ liệu phát sinh lớn nhất trong tháng
   const activeDays = (dailyData || []).filter(
     (d) => d.totalRevenue > 0 || d.fbAdsCostBeforeTax > 0 || d.leads > 0
   );
   const maxDayWithData = activeDays.length > 0
     ? Math.max(...activeDays.map((d) => d.dayIndex || 0))
-    : (dailyData?.length || 24);
+    : 1;
 
-  // Số ngày đã qua có ghi nhận hoạt động kinh doanh
-  const daysPassed = Math.min(daysInMonth, Math.max(1, maxDayWithData));
-  // Số ngày còn lại đến hết tháng
+  // Số ngày đã chạy: Khớp chuẩn theo thời gian thực tế của ngày hôm nay (không cần đợi điền số liệu)
+  let daysPassed = maxDayWithData;
+  if (isCurrentMonth) {
+    daysPassed = Math.min(daysInMonth, Math.max(now.getDate(), maxDayWithData));
+  } else if (isPastMonth) {
+    daysPassed = daysInMonth;
+  }
+
+  // Số ngày còn lại đến hết tháng theo thời gian thực
   const remainingDays = Math.max(0, daysInMonth - daysPassed);
+
+  // Áp lực cần đạt mỗi ngày tính chuẩn theo thời gian thực
+  const realTargetDaily = (remainingDays > 0 && overview.remainingRevenue > 0)
+    ? Math.round(overview.remainingRevenue / remainingDays)
+    : (overview.targetDaily || 0);
 
   // Doanh thu & Chi phí QC đã tích lũy từ đầu tháng
   const totalRevSoFar = overview.totalRevenue;
@@ -233,7 +248,7 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({
               Áp Lực Về Đích
             </span>
             <div className="text-lg font-black text-amber-950 dark:text-amber-100">
-              {formatCompactVND(overview.targetDaily)}/ngày
+              {formatCompactVND(realTargetDaily)}/ngày
             </div>
             <p className="text-[11px] text-amber-700 dark:text-amber-400">
               Còn thiếu {formatCompactVND(overview.remainingRevenue)}
@@ -305,7 +320,7 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({
             <div>
               <p className="text-xs text-slate-400 font-medium">Cần đạt mỗi ngày</p>
               <p className="text-base font-bold text-teal-300">
-                {formatVND(overview.targetDaily)}
+                {formatVND(realTargetDaily)}
               </p>
             </div>
             <div className="col-span-2 sm:col-span-1">

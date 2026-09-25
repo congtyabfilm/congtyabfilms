@@ -210,7 +210,11 @@ function normalizeDashboardData(data: DashboardData): DashboardData {
     data.overview.costPerOrder = totOrders > 0 ? Math.round(data.overview.fbAdsCostBeforeTax / totOrders) : 0;
     data.overview.costPerLead = totLeads > 0 ? Math.round(data.overview.fbAdsCostBeforeTax / totLeads) : 0;
 
-    // 4. Tự động tính áp lực về đích / cần đạt mỗi ngày theo số ngày còn lại trong tháng dương lịch
+    // 4. Tự động tính áp lực về đích / cần đạt mỗi ngày theo thời gian thực (lịch dương)
+    const now = new Date();
+    const isCurrentMonth = (now.getMonth() + 1 === month) && (now.getFullYear() === year);
+    const isPastMonth = (year < now.getFullYear()) || (year === now.getFullYear() && month < (now.getMonth() + 1));
+
     let lastActiveDay = 1;
     data.daily.forEach((d) => {
       if ((d.dayIndex || 1) <= daysInMonth && (d.totalRevenue > 0 || d.fbAdsCostBeforeTax > 0 || d.orders > 0)) {
@@ -218,11 +222,18 @@ function normalizeDashboardData(data: DashboardData): DashboardData {
       }
     });
 
+    let daysPassed = lastActiveDay;
+    if (isCurrentMonth) {
+      daysPassed = Math.min(daysInMonth, Math.max(now.getDate(), lastActiveDay));
+    } else if (isPastMonth) {
+      daysPassed = daysInMonth;
+    }
+
     const remainingRevenue = Math.max(0, (data.overview.targetRevenue || 800000000) - data.overview.totalRevenue);
     data.overview.remainingRevenue = remainingRevenue;
 
-    const remainingDays = Math.max(1, daysInMonth - lastActiveDay);
-    data.overview.targetDaily = remainingRevenue > 0 ? Math.round(remainingRevenue / remainingDays) : 0;
+    const remainingDays = Math.max(0, daysInMonth - daysPassed);
+    data.overview.targetDaily = (remainingDays > 0 && remainingRevenue > 0) ? Math.round(remainingRevenue / remainingDays) : 0;
   }
 
   // 5. Chuẩn hóa dữ liệu Phim Điện
