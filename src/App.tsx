@@ -5,6 +5,7 @@ import { KPIOverview } from './components/KPIOverview';
 import { RevenueChart } from './components/RevenueChart';
 import { StaffLeaderboard } from './components/StaffLeaderboard';
 import { DailyTable } from './components/DailyTable';
+import { PhimDienModule } from './components/PhimDienModule';
 import type { DashboardData, TimePeriod } from './types/dashboard';
 import { calculatePeriodMetrics } from './utils/periodCalculator';
 import { fetchDashboardData, getSavedGasUrl } from './services/api';
@@ -267,6 +268,12 @@ export const App: React.FC = () => {
             <DailyTable
               dailyData={data.daily}
               staffList={data.staffList}
+              monthLabel={data.monthLabel}
+            />
+
+            {/* 5. Chuyên mục Phim Điện (Chiến dịch QC độc lập - Không gắn Sale) */}
+            <PhimDienModule
+              phimDien={data.phimDien}
               monthLabel={data.monthLabel}
             />
           </>

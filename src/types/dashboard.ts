@@ -103,6 +103,23 @@ export interface PeriodMetrics {
   daysIncluded: number[];
 }
 
+export interface PhimDienDaily {
+  dayIndex: number;
+  dateLabel: string;
+  cost: number;
+  messages: number;
+  phones: number;
+  costPerMessage: number;
+}
+
+export interface PhimDienSummary {
+  totalCost: number;
+  totalMessages: number;
+  totalPhones: number;
+  costPerMessage: number;
+  daily: PhimDienDaily[];
+}
+
 export interface DashboardData {
   success: boolean;
   month: number;
@@ -112,6 +129,7 @@ export interface DashboardData {
   overview: OverviewMetrics;
   staffList: StaffSummary[];
   daily: DailyData[];
+  phimDien?: PhimDienSummary;
   lastUpdated: string;
   isMock?: boolean;
 }

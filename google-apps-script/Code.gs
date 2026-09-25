@@ -266,8 +266,8 @@ function extractMonthData(ss, month, year, availableMonths) {
   const remainingRevenue = parseNumber(getSafeCell(overviewValues, 9, 3)) || (targetRevenue - totalRevenue);
   const targetDaily = parseNumber(getSafeCell(overviewValues, 10, 3));
 
-  // Tỷ lệ chi phí QC: FB chiếm % TỔNG DOANH THU, GG chiếm % TỔNG DOANH THU GOOGLE
-  const fbAdsPercent = totalRevenue > 0 ? parseFloat(((fbAdsCost / totalRevenue) * 100).toFixed(2)) : 0;
+  // Tỷ lệ chi phí QC: FB chiếm % DOANH THU FB, GG chiếm % TỔNG DOANH THU GOOGLE
+  const fbAdsPercent = fbRevenue > 0 ? parseFloat(((fbAdsCost / fbRevenue) * 100).toFixed(2)) : 0;
   const ggAdsPercent = ggRevenue > 0 ? parseFloat(((ggAdsCost / ggRevenue) * 100).toFixed(2)) : 0;
   const totalAdsPercent = totalRevenue > 0 ? parseFloat(((totalAdsCost / totalRevenue) * 100).toFixed(2)) : 0;
 
@@ -368,6 +368,84 @@ function extractMonthData(ss, month, year, availableMonths) {
   const remainingDays = Math.max(1, daysInMonth - lastActiveDay);
   const autoTargetDaily = remainingRevenue > 0 ? Math.round(remainingRevenue / remainingDays) : 0;
 
+  // =================== 4. BÓC TÁCH MODULE PHIM ĐIỆN ===================
+  // Quét tìm dòng header của Phim điện (chứa 'tin nhắn' hoặc 'cp/tin' hoặc 'phim điện')
+  let colP_Cost = 9;        // Mặc định Cột J (index 9)
+  let colP_Msg = 10;        // Mặc định Cột K (index 10)
+  let colP_Phone = 11;      // Mặc định Cột L (index 11)
+  let colP_CostPerMsg = 12; // Mặc định Cột M (index 12)
+  let pHeaderRowIdx = 11;   // Dòng 12 (index 11) trong sheet Tháng
+
+  for (let r = 8; r < Math.min(16, overviewValues.length); r++) {
+    const row = overviewValues[r] || [];
+    for (let c = 0; c < row.length; c++) {
+      const val = String(row[c] || '').toLowerCase().trim();
+      if (val.indexOf('tin nhắn') !== -1 || val.indexOf('tin nh') !== -1) {
+        pHeaderRowIdx = r;
+        colP_Msg = c;
+        if (c > 0) colP_Cost = c - 1;
+        if (c + 1 < row.length) colP_Phone = c + 1;
+        if (c + 2 < row.length) colP_CostPerMsg = c + 2;
+        break;
+      }
+    }
+    if (pHeaderRowIdx !== 11 || colP_Msg !== 10) break;
+  }
+
+  // Dòng tổng Phim Điện (ngay dưới dòng header - thông thường là dòng 13 / index 12)
+  const pSummaryRow = overviewValues[pHeaderRowIdx + 1] || [];
+  let phimTotalCost = parseNumber(pSummaryRow[colP_Cost]);
+  let phimTotalMessages = parseNumber(pSummaryRow[colP_Msg]);
+  let phimTotalPhones = parseNumber(pSummaryRow[colP_Phone]);
+
+  // Chi tiết từng ngày của Phim Điện (dóng theo lịch dương của tháng)
+  const phimDienDaily = [];
+  const phimStartRow = pHeaderRowIdx + 2; // Hàng 14 (index 13)
+  let sumPhimCost = 0;
+  let sumPhimMessages = 0;
+  let sumPhimPhones = 0;
+
+  for (let i = 0; i < daysInMonth; i++) {
+    const pRowIdx = phimStartRow + i;
+    const pRow = overviewValues[pRowIdx] || [];
+    const dayCost = parseNumber(pRow[colP_Cost]);
+    const dayMsg = parseNumber(pRow[colP_Msg]);
+    const dayPhone = parseNumber(pRow[colP_Phone]);
+    const dayCostPerMsg = dayMsg > 0 ? Math.round(dayCost / dayMsg) : 0;
+
+    sumPhimCost += dayCost;
+    sumPhimMessages += dayMsg;
+    sumPhimPhones += dayPhone;
+
+    // Lấy ngày dd/MM/yyyy khớp với dòng bên trái
+    const oRow = overviewValues[overviewStartRow + i] || [];
+    const sRow = saleValues[saleStartRow + i] || [];
+    const rawDate = oRow[colO_Date] || (sRow ? sRow[0] : null);
+    const dateFormatted = formatToDDMMYYYY(rawDate, i + 1, month, year);
+
+    phimDienDaily.push({
+      dayIndex: i + 1,
+      dateLabel: dateFormatted,
+      cost: dayCost,
+      messages: dayMsg,
+      phones: dayPhone,
+      costPerMessage: dayCostPerMsg
+    });
+  }
+
+  if (phimTotalCost === 0 && sumPhimCost > 0) phimTotalCost = sumPhimCost;
+  if (phimTotalMessages === 0 && sumPhimMessages > 0) phimTotalMessages = sumPhimMessages;
+  if (phimTotalPhones === 0 && sumPhimPhones > 0) phimTotalPhones = sumPhimPhones;
+  const phimCostPerMsg = phimTotalMessages > 0 ? Math.round(phimTotalCost / phimTotalMessages) : 0;
+
+  const phimDienSummary = {
+    totalCost: phimTotalCost,
+    totalMessages: phimTotalMessages,
+    totalPhones: phimTotalPhones,
+    costPerMessage: phimCostPerMsg,
+    daily: phimDienDaily
+  };
+
   return {
     success: true,
     month: month,
@@ -402,6 +480,7 @@ function extractMonthData(ss, month, year, availableMonths) {
     },
     staffList: staffList,
     daily: dailyData,
+    phimDien: phimDienSummary,
     lastUpdated: new Date().toISOString()
   };
 }

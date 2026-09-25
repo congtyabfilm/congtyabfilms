@@ -225,5 +225,45 @@ function normalizeDashboardData(data: DashboardData): DashboardData {
     data.overview.targetDaily = remainingRevenue > 0 ? Math.round(remainingRevenue / remainingDays) : 0;
   }
 
+  // 5. Chuẩn hóa dữ liệu Phim Điện
+  if (data.phimDien && data.phimDien.daily && Array.isArray(data.phimDien.daily)) {
+    data.phimDien.daily = data.phimDien.daily
+      .filter((d, idx) => (d.dayIndex || idx + 1) <= daysInMonth)
+      .map((d, idx) => {
+        const cost = Number(d.cost) || 0;
+        const messages = Number(d.messages) || 0;
+        const phones = Number(d.phones) || 0;
+        const costPerMessage = messages > 0 ? Math.round(cost / messages) : 0;
+        return {
+          ...d,
+          dayIndex: d.dayIndex || idx + 1,
+          dateLabel: formatDateDDMMYYYY(d.dateLabel, d.dayIndex || idx + 1, month, year),
+          cost,
+          messages,
+          phones,
+          costPerMessage
+        };
+      });
+
+    const sumPhimCost = data.phimDien.daily.reduce((acc, d) => acc + d.cost, 0);
+    const sumPhimMessages = data.phimDien.daily.reduce((acc, d) => acc + d.messages, 0);
+    const sumPhimPhones = data.phimDien.daily.reduce((acc, d) => acc + d.phones, 0);
+
+    const totalCost = data.phimDien.totalCost > 0 ? data.phimDien.totalCost : sumPhimCost;
+    const totalMessages = data.phimDien.totalMessages > 0 ? data.phimDien.totalMessages : sumPhimMessages;
+    const totalPhones = data.phimDien.totalPhones > 0 ? data.phimDien.totalPhones : sumPhimPhones;
+    const costPerMessage = totalMessages > 0 ? Math.round(totalCost / totalMessages) : 0;
+
+    data.phimDien = {
+      totalCost,
+      totalMessages,
+      totalPhones,
+      costPerMessage,
+      daily: data.phimDien.daily
+    };
+  } else if (data.isMock && mockDashboardData.phimDien) {
+    data.phimDien = mockDashboardData.phimDien;
+  }
+
   return data;
 }
