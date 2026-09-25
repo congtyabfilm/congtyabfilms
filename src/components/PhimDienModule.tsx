@@ -10,7 +10,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import type { PhimDienSummary } from '../types/dashboard';
-import { formatVND, formatNumber, formatDateDDMMYYYY } from '../utils/formatters';
+import { formatVND, formatNumber, formatPercent, formatDateDDMMYYYY } from '../utils/formatters';
 
 interface PhimDienModuleProps {
   phimDien?: PhimDienSummary;
@@ -31,6 +31,9 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
 
   const dailyList = summary.daily || [];
 
+  // Tỷ lệ để lại SĐT trên tổng tin nhắn
+  const phoneRate = summary.totalMessages > 0 ? (summary.totalPhones / summary.totalMessages) * 100 : 0;
+
   // Lọc theo từ khóa ngày tìm kiếm
   const filteredDaily = dailyList.filter((d) =>
     (d.dateLabel || '').toLowerCase().includes(searchTerm.toLowerCase())
@@ -40,9 +43,10 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
   const handleExportCSV = () => {
     const headers = [
       'Ngày',
-      'Chi phí (chưa thuế)',
+      'Chi phí',
       'Tin nhắn',
       'Số điện thoại (SĐT)',
+      '% Để lại SĐT',
       'CP / Tin nhắn'
     ];
 
@@ -51,6 +55,7 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
       d.cost,
       d.messages,
       d.phones,
+      d.messages > 0 ? `"${formatPercent((d.phones / d.messages) * 100)}"` : '"0%"',
       d.messages > 0 ? Math.round(d.cost / d.messages) : 0
     ]);
 
@@ -89,7 +94,7 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
               </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Báo cáo hiệu quả chạy quảng cáo Phim điện riêng biệt, chi phí nhập thô nguyên bản chưa tính thuế
+              Báo cáo hiệu quả chiến dịch quảng cáo Phim điện riêng biệt
             </p>
           </div>
         </div>
@@ -113,9 +118,6 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
           </div>
           <div className="mt-2 text-lg sm:text-2xl font-bold text-slate-900 dark:text-white">
             {formatVND(summary.totalCost)}
-          </div>
-          <div className="mt-2 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md inline-block font-medium">
-            Chi phí nhập thô (chưa thuế)
           </div>
         </div>
 
@@ -149,7 +151,7 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
             <span className="text-xs font-normal text-slate-500 ml-1">SĐT</span>
           </div>
           <div className="mt-2 text-[11px] text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md inline-block font-medium">
-            Khách để lại thông tin SĐT
+            % để lại SĐT: {summary.totalMessages > 0 ? formatPercent(phoneRate) : '0%'}
           </div>
         </div>
 
@@ -182,7 +184,7 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
               Chi Tiết Từng Ngày - Phim Điện
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Dóng theo ngày trong tháng, chi phí nhập thô hàng ngày và hiệu quả tin nhắn
+              Dóng theo ngày trong tháng, chi phí hàng ngày và hiệu quả tin nhắn
             </p>
           </div>
 
@@ -225,9 +227,10 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
                 <th className="py-3 px-4 sticky left-0 z-20 bg-slate-50 dark:bg-slate-900 shadow-[2px_0_4px_rgba(0,0,0,0.06)] whitespace-nowrap">
                   Ngày
                 </th>
-                <th className="py-3 px-4 text-right whitespace-nowrap">Chi Phí (Chưa Thuế)</th>
+                <th className="py-3 px-4 text-right whitespace-nowrap">Chi Phí</th>
                 <th className="py-3 px-4 text-center whitespace-nowrap">Tin Nhắn</th>
                 <th className="py-3 px-4 text-center whitespace-nowrap">Số Điện Thoại (SĐT)</th>
+                <th className="py-3 px-4 text-center whitespace-nowrap">% Để Lại SĐT</th>
                 <th className="py-3 px-4 text-right text-violet-600 dark:text-violet-400 whitespace-nowrap">
                   CP / Tin Nhắn
                 </th>
@@ -237,6 +240,7 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
               {filteredDaily.length > 0 ? (
                 filteredDaily.map((row) => {
                   const cpPerMsg = row.messages > 0 ? Math.round(row.cost / row.messages) : 0;
+                  const rowPhoneRate = row.messages > 0 ? (row.phones / row.messages) * 100 : 0;
                   const hasData = row.cost > 0 || row.messages > 0 || row.phones > 0;
 
                   return (
@@ -276,6 +280,15 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
                           <span className="text-slate-400">0</span>
                         )}
                       </td>
+                      <td className="py-3 px-4 text-center whitespace-nowrap">
+                        {row.messages > 0 ? (
+                          <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                            {formatPercent(rowPhoneRate)}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </td>
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         {cpPerMsg > 0 ? (
                           <span className="font-semibold text-violet-600 dark:text-violet-400">
@@ -290,7 +303,7 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
                 })
               ) : (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-slate-400 text-xs">
+                  <td colSpan={6} className="py-8 text-center text-slate-400 text-xs">
                     {searchTerm ? 'Không tìm thấy ngày phù hợp với từ khóa' : 'Chưa có dữ liệu Phim Điện'}
                   </td>
                 </tr>
@@ -312,6 +325,9 @@ export const PhimDienModule: React.FC<PhimDienModuleProps> = ({ phimDien, monthL
                   </td>
                   <td className="py-3.5 px-4 text-center text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                     {formatNumber(summary.totalPhones)}
+                  </td>
+                  <td className="py-3.5 px-4 text-center text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
+                    {summary.totalMessages > 0 ? formatPercent(phoneRate) : '0%'}
                   </td>
                   <td className="py-3.5 px-4 text-right text-violet-600 dark:text-violet-400 whitespace-nowrap">
                     {summary.totalMessages > 0 ? formatVND(summary.costPerMessage) : '-'}
