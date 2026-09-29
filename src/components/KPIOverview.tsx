@@ -58,18 +58,24 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({
     ? Math.max(...activeDays.map((d) => d.dayIndex || 0))
     : 1;
 
-  // Số ngày đã chạy: Khớp chuẩn theo thời gian thực tế của ngày hôm nay (không cần đợi điền số liệu)
-  let daysPassed = maxDayWithData;
+  const currentTodayDate = isCurrentMonth ? Math.min(daysInMonth, Math.max(now.getDate(), maxDayWithData)) : daysInMonth;
+
+  // Số ngày còn lại đến hết tháng: TÍNH CẢ NGÀY HÔM NAY (ví dụ hôm nay 29/9 -> còn 2 ngày: ngày 29 và ngày 30)
+  let remainingDays = 0;
   if (isCurrentMonth) {
-    daysPassed = Math.min(daysInMonth, Math.max(now.getDate(), maxDayWithData));
+    remainingDays = Math.max(1, daysInMonth - currentTodayDate + 1);
   } else if (isPastMonth) {
-    daysPassed = daysInMonth;
+    remainingDays = 0;
+  } else {
+    remainingDays = daysInMonth;
   }
 
-  // Số ngày còn lại đến hết tháng theo thời gian thực
-  const remainingDays = Math.max(0, daysInMonth - daysPassed);
+  // Số ngày đã qua trước hôm nay để tính tốc độ bình quân
+  const daysPassed = isCurrentMonth
+    ? Math.min(daysInMonth, Math.max(1, currentTodayDate - 1))
+    : (isPastMonth ? daysInMonth : 1);
 
-  // Áp lực cần đạt mỗi ngày tính chuẩn theo thời gian thực
+  // Áp lực cần đạt mỗi ngày tính chuẩn theo thời gian thực (chia cho số ngày còn lại gồm cả hôm nay)
   const realTargetDaily = (remainingDays > 0 && overview.remainingRevenue > 0)
     ? Math.round(overview.remainingRevenue / remainingDays)
     : (overview.targetDaily || 0);
@@ -379,11 +385,17 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({
           <div className="flex items-center gap-2 self-start sm:self-auto px-3.5 py-1.5 rounded-xl bg-indigo-900/60 border border-indigo-700/50 text-xs shadow-inner">
             <Calendar className="w-3.5 h-3.5 text-indigo-300 shrink-0" />
             <span className="text-slate-300 font-medium">
-              Đã chạy: <b className="text-white font-bold">{daysPassed}/{daysInMonth} ngày</b>
-              {remainingDays > 0 ? (
-                <> (còn <b className="text-amber-300 font-bold">{remainingDays} ngày</b>)</>
+              {isPastMonth ? (
+                <span className="text-emerald-300 font-bold">• Đã chốt tháng ({daysInMonth}/{daysInMonth} ngày)</span>
               ) : (
-                <span className="text-emerald-300 ml-1 font-bold">• Đã chốt tháng</span>
+                <>
+                  Đang chạy: <b className="text-white font-bold">{currentTodayDate}/{daysInMonth} ngày</b>
+                  {remainingDays > 0 ? (
+                    <> (còn <b className="text-amber-300 font-bold">{remainingDays} ngày</b>)</>
+                  ) : (
+                    <span className="text-emerald-300 ml-1 font-bold">• Đã hết tháng</span>
+                  )}
+                </>
               )}
             </span>
           </div>

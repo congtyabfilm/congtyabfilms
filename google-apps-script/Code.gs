@@ -370,14 +370,18 @@ function extractMonthData(ss, month, year, availableMonths) {
     }
   });
 
-  let daysPassed = lastActiveDay;
+  const currentTodayDate = isCurrentMonth ? Math.min(daysInMonth, now.getDate()) : daysInMonth;
+
+  // Số ngày còn lại tính cả ngày hôm nay: ví dụ ngày 29 trong tháng 30 ngày -> còn 2 ngày (29 và 30)
+  let remainingDays = 0;
   if (isCurrentMonth) {
-    daysPassed = Math.min(daysInMonth, Math.max(now.getDate(), lastActiveDay));
+    remainingDays = Math.max(1, daysInMonth - currentTodayDate + 1);
   } else if (isPastMonth) {
-    daysPassed = daysInMonth;
+    remainingDays = 0;
+  } else {
+    remainingDays = daysInMonth;
   }
 
-  const remainingDays = Math.max(0, daysInMonth - daysPassed);
   const autoTargetDaily = remainingDays > 0 && remainingRevenue > 0 ? Math.round(remainingRevenue / remainingDays) : 0;
 
   // =================== 4. BÓC TÁCH MODULE PHIM ĐIỆN ===================
