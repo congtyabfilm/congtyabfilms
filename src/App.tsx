@@ -13,7 +13,10 @@ import { AlertCircle, RefreshCw } from 'lucide-react';
 
 export const App: React.FC = () => {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [selectedMonthId, setSelectedMonthId] = useState<string>('9_2026');
+  const [selectedMonthId, setSelectedMonthId] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getMonth() + 1}_${now.getFullYear()}`;
+  });
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>('month');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
@@ -51,10 +54,21 @@ export const App: React.FC = () => {
   // Hàm tải dữ liệu
   const loadData = useCallback(async (monthId?: string, isBackgroundSync: boolean = false) => {
     try {
-      const mId = monthId || selectedMonthId;
+      // Khi tải lần đầu (không truyền monthId): không ép buộc targetMonth/targetYear
+      // để Google Apps Script tự động trả về tháng mới nhất (availableMonths[0])!
+      let targetMonth: number | undefined;
+      let targetYear: number | undefined;
+
+      const mId = monthId;
+
+      if (monthId && monthId.includes('_')) {
+        const parts = monthId.split('_');
+        targetMonth = parseInt(parts[0], 10);
+        targetYear = parseInt(parts[1], 10);
+      }
 
       // Nếu đã có trong cache và không phải sync ngầm -> hiển thị ngay lập tức 0ms
-      if (monthCache.current.has(mId) && !isBackgroundSync) {
+      if (mId && monthCache.current.has(mId) && !isBackgroundSync) {
         setData(monthCache.current.get(mId)!);
         setIsLoading(false);
       } else if (!isBackgroundSync) {
@@ -64,28 +78,19 @@ export const App: React.FC = () => {
       if (isBackgroundSync) setIsRefreshing(true);
       setError(null);
 
-      let targetMonth: number | undefined;
-      let targetYear: number | undefined;
-
-      if (mId && mId.includes('_')) {
-        const parts = mId.split('_');
-        targetMonth = parseInt(parts[0], 10);
-        targetYear = parseInt(parts[1], 10);
-      }
-
       const res = await fetchDashboardData(targetMonth, targetYear);
       
-      // Lưu vào cache
-      monthCache.current.set(mId, res);
+      // Lưu vào cache theo ID thực tế của tháng trả về
       if (res.month && res.year) {
-        monthCache.current.set(`${res.month}_${res.year}`, res);
+        const actualMonthId = `${res.month}_${res.year}`;
+        monthCache.current.set(actualMonthId, res);
+        setSelectedMonthId(actualMonthId);
+      }
+      if (mId) {
+        monthCache.current.set(mId, res);
       }
 
       setData(res);
-
-      if (res.month && res.year) {
-        setSelectedMonthId(`${res.month}_${res.year}`);
-      }
 
       // Tự động tải trước (pre-fetch) tháng trước vào cache nếu chưa có để bấm nhanh tức thì
       if (res.availableMonths && res.availableMonths.length > 1) {
@@ -105,7 +110,7 @@ export const App: React.FC = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [selectedMonthId]);
+  }, []);
 
   // Nạp dữ liệu lần đầu
   useEffect(() => {
@@ -185,8 +190,8 @@ export const App: React.FC = () => {
         selectedPeriod,
         data.daily,
         data.overview,
-        data.month || 9,
-        data.year || 2026,
+        data.month || (new Date().getMonth() + 1),
+        data.year || (new Date().getFullYear()),
         data.phimDien
       )
     : null;

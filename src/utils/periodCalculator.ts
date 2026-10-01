@@ -139,7 +139,10 @@ export function calculatePeriodMetrics(
     case 'month':
     default: {
       currentDayIndexes = dailyData.map((d) => d.dayIndex);
-      periodLabel = `Tháng này (${month < 10 ? '0' + month : month}/${year})`;
+      const isCurrentRealMonth = (now.getMonth() + 1 === month && now.getFullYear() === year);
+      periodLabel = isCurrentRealMonth
+        ? `Tháng này (${month < 10 ? '0' + month : month}/${year})`
+        : `Tháng ${month < 10 ? '0' + month : month}/${year}`;
       const prevMonthNumber = month === 1 ? 12 : month - 1;
       const prevYearNumber = month === 1 ? year - 1 : year;
       comparisonLabel = `So với tháng trước (Tháng ${prevMonthNumber < 10 ? '0' + prevMonthNumber : prevMonthNumber}/${prevYearNumber})`;

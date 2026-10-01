@@ -61,19 +61,18 @@ function doGet(e) {
 function scanAvailableMonths(ss) {
   const sheets = ss.getSheets();
   const months = [];
-  const monthRegex = /^Tháng\s+(\d{1,2})\/(\d{4})$/i;
+  const monthRegex = /^Tháng\s+(\d{1,2})(?:\s*[\/-]?\s*(\d{4}))?$/i;
 
   sheets.forEach(sheet => {
     const name = sheet.getName().trim();
     const match = name.match(monthRegex);
     if (match) {
       const m = parseInt(match[1], 10);
-      const y = parseInt(match[2], 10);
+      const y = match[2] ? parseInt(match[2], 10) : new Date().getFullYear();
       
       // CHỈ LẤY TỪ NĂM 2026 TRỞ ĐI (BỎ 2025)
       if (y >= 2026) {
-        const saleSheetName = `Sale tháng ${m}/${y}`;
-        const saleSheet = ss.getSheetByName(saleSheetName);
+        const saleSheet = findSheetCaseInsensitive(ss, `Sale tháng ${m}/${y}`);
         
         months.push({
           id: `${m}_${y}`,
@@ -81,7 +80,7 @@ function scanAvailableMonths(ss) {
           year: y,
           label: `Tháng ${m < 10 ? '0' + m : m}/${y}`,
           overviewSheet: name,
-          saleSheet: saleSheet ? saleSheetName : null
+          saleSheet: saleSheet ? saleSheet.getName() : null
         });
       }
     }
@@ -95,16 +94,22 @@ function scanAvailableMonths(ss) {
  * Trích xuất dữ liệu chi tiết của 1 tháng (Tự tìm cột thông minh)
  */
 function extractMonthData(ss, month, year, availableMonths) {
-  const overviewSheetName = `Tháng ${month}/${year}`;
-  const saleSheetName = `Sale tháng ${month}/${year}`;
+  let overviewSheet = findSheetCaseInsensitive(ss, `Tháng ${month}/${year}`);
+  let saleSheet = findSheetCaseInsensitive(ss, `Sale tháng ${month}/${year}`);
 
-  const overviewSheet = ss.getSheetByName(overviewSheetName);
-  const saleSheet = ss.getSheetByName(saleSheetName);
+  // Nếu không tìm thấy sheet theo tháng yêu cầu, tự động fallback sang tháng mới nhất có sẵn
+  if (!overviewSheet && availableMonths && availableMonths.length > 0) {
+    const fallback = availableMonths[0];
+    month = fallback.month;
+    year = fallback.year;
+    overviewSheet = findSheetCaseInsensitive(ss, `Tháng ${month}/${year}`);
+    saleSheet = findSheetCaseInsensitive(ss, `Sale tháng ${month}/${year}`);
+  }
 
   if (!overviewSheet) {
     return {
       success: false,
-      message: `Không tìm thấy sheet: ${overviewSheetName}`
+      message: `Không tìm thấy sheet: Tháng ${month}/${year}`
     };
   }
 
@@ -596,4 +601,19 @@ function parseNumber(val) {
 function createJsonResponse(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Tìm sheet không phân biệt chữ hoa thường và khoảng trắng thừa
+ */
+function findSheetCaseInsensitive(ss, targetName) {
+  if (!targetName) return null;
+  const target = targetName.trim().toLowerCase();
+  const sheets = ss.getSheets();
+  for (let i = 0; i < sheets.length; i++) {
+    if (sheets[i].getName().trim().toLowerCase() === target) {
+      return sheets[i];
+    }
+  }
+  return null;
 }

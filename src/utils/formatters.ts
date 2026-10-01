@@ -43,8 +43,9 @@ export function formatDateDDMMYYYY(
   if (!dateStr) {
     if (fallbackDay) {
       const dd = fallbackDay < 10 ? `0${fallbackDay}` : `${fallbackDay}`;
-      const mm = month ? (month < 10 ? `0${month}` : `${month}`) : '09';
-      const y = year || 2026;
+      const curM = new Date().getMonth() + 1;
+      const mm = month ? (month < 10 ? `0${month}` : `${month}`) : (curM < 10 ? `0${curM}` : `${curM}`);
+      const y = year || new Date().getFullYear();
       return `${dd}/${mm}/${y}`;
     }
     return '';

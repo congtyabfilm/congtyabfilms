@@ -71,8 +71,8 @@ export async function fetchDashboardData(month?: number, year?: number): Promise
 function normalizeDashboardData(data: DashboardData): DashboardData {
   if (!data) return data;
 
-  const month = data.month || 9;
-  const year = data.year || 2026;
+  const month = data.month || (new Date().getMonth() + 1);
+  const year = data.year || (new Date().getFullYear());
   const daysInMonth = new Date(year, month, 0).getDate();
 
   // 1. Chỉ lấy đúng số ngày trong tháng dương lịch (loại bỏ hoàn toàn ngày tràn sang tháng sau như 01/10 trong tháng 9)

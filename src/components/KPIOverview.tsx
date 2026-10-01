@@ -33,8 +33,8 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({
   periodMetrics,
   staffList = [],
   dailyData = [],
-  month = 9,
-  year = 2026
+  month = new Date().getMonth() + 1,
+  year = new Date().getFullYear()
 }) => {
   // Tiến độ mục tiêu toàn tháng
   const percentAchieved = overview.targetRevenue > 0
@@ -42,8 +42,8 @@ export const KPIOverview: React.FC<KPIOverviewProps> = ({
     : 0;
 
   // Tính toán số liệu DỰ BÁO CUỐI THÁNG (Run-rate Projection)
-  const currentMonth = month || 9;
-  const currentYear = year || 2026;
+  const currentMonth = month || (new Date().getMonth() + 1);
+  const currentYear = year || (new Date().getFullYear());
   const daysInMonth = new Date(currentYear, currentMonth, 0).getDate(); // Số ngày thực tế theo tháng dương lịch
 
   const now = new Date();

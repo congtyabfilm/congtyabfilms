@@ -2,11 +2,19 @@ import type { DashboardData } from '../types/dashboard';
 
 export const mockDashboardData: DashboardData = {
   success: true,
-  month: 9,
+  month: 10,
   year: 2026,
-  monthLabel: "Tháng 09/2026",
+  monthLabel: "Tháng 10/2026",
   isMock: true,
   availableMonths: [
+    {
+      id: "10_2026",
+      month: 10,
+      year: 2026,
+      label: "Tháng 10/2026",
+      overviewSheet: "Tháng 10/2026",
+      saleSheet: "Sale tháng 10/2026"
+    },
     {
       id: "9_2026",
       month: 9,
